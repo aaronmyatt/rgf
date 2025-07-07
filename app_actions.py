@@ -41,3 +41,35 @@ def archive_flow_match(db, flow_match: FlowMatch):
 def archive_match_note(db, match_note: MatchNote):
     """Archive a match_note."""
     archive_row(db, "match_notes", match_note.id)
+
+def activate_flow(db, flow_id: int) -> int:
+    """Activate a flow by adding it to flow_history and return the history id."""
+    flow_history = FlowHistory(flow_id=flow_id)
+    return insert_row(db, "flow_history", flow_history)
+
+def get_active_flow_id(db) -> Optional[int]:
+    """Get the currently active flow id (most recent in flow_history)."""
+    result = list(db.execute("""
+        SELECT flow_id FROM flow_history 
+        ORDER BY created_at DESC 
+        LIMIT 1
+    """))
+    return result[0]["flow_id"] if result else None
+
+def get_active_flow(db) -> Optional[Flow]:
+    """Get the currently active flow object."""
+    flow_id = get_active_flow_id(db)
+    if flow_id:
+        return get_row(db, "flows", flow_id, Flow)
+    return None
+
+def get_flow_history(db, limit: int = 10) -> list:
+    """Get recent flow history with flow details."""
+    return list(db.execute("""
+        SELECT fh.id, fh.flow_id, fh.created_at, f.name, f.description
+        FROM flow_history fh
+        JOIN flows f ON fh.flow_id = f.id
+        WHERE f.archived = FALSE
+        ORDER BY fh.created_at DESC
+        LIMIT ?
+    """, [limit]))
