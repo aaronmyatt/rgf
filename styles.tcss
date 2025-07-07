@@ -1,0 +1,4 @@
+#inputfooter {
+    height: 6;
+    dock: bottom;
+}
