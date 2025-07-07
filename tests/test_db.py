@@ -13,7 +13,7 @@ def db():
     # Use a temporary file for the database
     with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as tf:
         db_path = tf.name
-    schema_path = os.path.join(os.path.dirname(__file__), "schema.sql")
+    schema_path = os.path.join(os.path.dirname(__file__), "../schema.sql")
     db = get_db(db_path, schema_path)
     yield db
     os.remove(db_path)
