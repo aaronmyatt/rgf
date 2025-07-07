@@ -6,6 +6,8 @@ CREATE TABLE IF NOT EXISTS flows (
     parent_flow_id INTEGER NULL,         -- nullable for root flows
     parent_flow_match_id INTEGER NULL,   -- nullable for root flows, links to flow_matches
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    archived BOOLEAN DEFAULT FALSE, -- indicates if the flow is archived
     FOREIGN KEY (parent_flow_id) REFERENCES flows(id),
     FOREIGN KEY (parent_flow_match_id) REFERENCES flow_matches(id)
 );
@@ -13,9 +15,13 @@ CREATE TABLE IF NOT EXISTS flows (
 -- Table: matches
 CREATE TABLE IF NOT EXISTS matches (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    date_played DATE,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    line TEXT NOT NULL,
+    file_path TEXT NOT NULL,
+    file_name TEXT NOT NULL,
+    grep_meta TEXT, -- stores grep metadata as JSON
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    archived BOOLEAN DEFAULT FALSE -- indicates if the flow is archived
 );
 
 -- Table: flow_matches
@@ -25,6 +31,8 @@ CREATE TABLE IF NOT EXISTS flow_matches (
     match_id INTEGER NOT NULL,
     order_index INTEGER NOT NULL, -- tracks order within the flow
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    archived BOOLEAN DEFAULT FALSE, -- indicates if the flow is archived
     FOREIGN KEY (flow_id) REFERENCES flows(id),
     FOREIGN KEY (match_id) REFERENCES matches(id)
 );
@@ -37,5 +45,7 @@ CREATE TABLE IF NOT EXISTS match_notes (
     description TEXT,
     note TEXT NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    archived BOOLEAN DEFAULT FALSE, -- indicates if the flow is archived
     FOREIGN KEY (match_id) REFERENCES matches(id)
 );
