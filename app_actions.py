@@ -1,7 +1,7 @@
 from typing import Optional
 from db import (
     get_db,
-    Flow, Match, FlowMatch, MatchNote,
+    Flow, Match, FlowMatch, MatchNote, FlowHistory,
     insert_row, get_row, update_row, archive_row, list_rows
 )
 

@@ -59,6 +59,12 @@ class MatchNote:
     updated_at: Optional[str] = None
     archived: bool = False
 
+@dataclass
+class FlowHistory:
+    id: Optional[int] = None
+    flow_id: int = 0
+    created_at: Optional[str] = None
+
 # --- Utility functions ---
 
 def insert_row(db, table: str, row):
