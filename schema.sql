@@ -49,3 +49,11 @@ CREATE TABLE IF NOT EXISTS match_notes (
     archived BOOLEAN DEFAULT FALSE, -- indicates if the flow is archived
     FOREIGN KEY (match_id) REFERENCES matches(id)
 );
+
+-- Table: flow_history
+CREATE TABLE IF NOT EXISTS flow_history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    flow_id INTEGER NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (flow_id) REFERENCES flows(id)
+);
