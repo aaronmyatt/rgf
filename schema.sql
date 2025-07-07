@@ -1,5 +1,5 @@
 -- Table: flows
-CREATE TABLE flows (
+CREATE TABLE IF NOT EXISTS flows (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
     description TEXT,
@@ -11,7 +11,7 @@ CREATE TABLE flows (
 );
 
 -- Table: matches
-CREATE TABLE matches (
+CREATE TABLE IF NOT EXISTS matches (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
     date_played DATE,
@@ -19,7 +19,7 @@ CREATE TABLE matches (
 );
 
 -- Table: flow_matches
-CREATE TABLE flow_matches (
+CREATE TABLE IF NOT EXISTS flow_matches (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     flow_id INTEGER NOT NULL,
     match_id INTEGER NOT NULL,
@@ -30,7 +30,7 @@ CREATE TABLE flow_matches (
 );
 
 -- Table: match_notes
-CREATE TABLE match_notes (
+CREATE TABLE IF NOT EXISTS match_notes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     match_id INTEGER NOT NULL,
     name TEXT NOT NULL,

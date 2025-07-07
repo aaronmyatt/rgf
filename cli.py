@@ -2,7 +2,8 @@ from os import system
 
 from textual.binding import Binding
 from textual.app import App, ComposeResult
-from textual.widgets import DataTable, Static, Input, Footer
+from textual.widgets import DataTable, Static, Input, Footer, ListView, ListItem, Label
+
 from textual.containers import Horizontal, Vertical, Container
 from textual import events
 from textual.content import Content
@@ -190,6 +191,11 @@ class BlankScreen2(Screen):
     ]
     def compose(self) -> ComposeResult:
         yield Static("Blank Screen 2 (press 1/2/3 to switch screens)", classes="header")
+        yield ListView(
+            ListItem(Label("One")),
+            ListItem(Label("Two")),
+            ListItem(Label("Three")),
+        )
         yield Footer()
 
     def on_key(self, event: events.Key) -> None:
