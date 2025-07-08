@@ -33,7 +33,7 @@ def get_rg_matches(args: UserGrep):
     """
     Run ripgrep and returns list of Match objects.
     """
-    cmd = ['rg', '--color=never', '--json', args.pattern] + args.paths
+    cmd = ['rg', '--color=never', '--json', '--glob', '!*lock', args.pattern] + args.paths
     result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     matches = []
     for line in result.stdout.strip().split('\n'):
