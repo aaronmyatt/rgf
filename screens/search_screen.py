@@ -7,6 +7,7 @@ from textual.containers import Horizontal, Vertical, Container
 from textual import events
 from textual.content import Content
 from textual.screen import Screen
+from .base_screen import BaseScreen
 
 # Import shared logic from waystation.py
 from waystation import Match, UserGrep, get_rg_matches, get_grep_ast_preview
@@ -37,7 +38,7 @@ class GrepAstPreview(Static):
         self.update(get_grep_ast_preview(match))
 
 
-class SearchScreen(Screen):
+class SearchScreen(BaseScreen):
     CSS = '''
 .h-full {
     height: 100%;
@@ -56,16 +57,11 @@ class SearchScreen(Screen):
 }
 '''
 
-    BINDINGS = [
-        Binding(key="q", action="quit", description="Quit", show=True),
+    BINDINGS = BaseScreen.COMMON_BINDINGS + [
         Binding(key="up", action="cursor_up", description="Cursor Up", show=True),
         Binding(key="down", action="cursor_down", description="Cursor Down", show=True),
         Binding(key="enter", action="open_in_editor", description="Open in editor", show=True),
         Binding(key="n", action="new_search", description="New Search", show=True),
-        Binding(key="1", action="goto_screen_1", description="Screen 1", show=True),
-        Binding(key="2", action="goto_screen_2", description="Screen 2", show=True),
-        Binding(key="3", action="goto_screen_3", description="Screen 3", show=True),
-        Binding(key="escape", action="unfocus_all", description="Unfocus", show=True),
     ]
 
     def __init__(self, user_grep: UserGrep = None):
@@ -125,28 +121,19 @@ class SearchScreen(Screen):
 
     def on_key(self, event: events.Key) -> None:
         # Prevent screen switching if an Input is focused
+        super().on_key(event)
         if isinstance(self.focused, Input):
             if event.key in {"1", "2", "3"}:
                 return
             if event.key == "escape":
                 self.focused.blur()
                 return
-        if event.key == "q":
-            self.app.exit()
         elif event.key == "enter" and self.focused == self.dg:
             self.action_open_in_editor()
         elif event.key == "up":
             self.action_cursor_up()
         elif event.key == "down":
             self.action_cursor_down()
-        elif event.key == "escape":
-            self.action_unfocus_all()
-        elif event.key == "1":
-            self.action_goto_screen_1()
-        elif event.key == "2":
-            self.action_goto_screen_2()
-        elif event.key == "3":
-            self.action_goto_screen_3()
 
     def on_data_table_row_selected(self, event):
         self.update_preview(event.row_key.value)
@@ -169,15 +156,6 @@ class SearchScreen(Screen):
         self.matches = []
         self.dg.clear()
         pattern_input.focus()
-
-    def action_goto_screen_1(self):
-        self.app.push_screen(self.app.screen_search)
-
-    def action_goto_screen_2(self):
-        self.app.push_screen(self.app.screen_blank2)
-
-    def action_goto_screen_3(self):
-        self.app.push_screen(self.app.screen_blank3)
 
     def action_unfocus_all(self):
         if self.focused:

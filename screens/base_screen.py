@@ -16,14 +16,7 @@ class BaseScreen(Screen):
     ]
 
     def on_key(self, event: events.Key) -> None:
-        """Common key handling with Input focus prevention."""
-        if isinstance(self.focused, Input):
-            if event.key in {"1", "2", "3"}:
-                return
-            if event.key == "escape":
-                self.focused.blur()
-                return
-        
+        """Common key handling with Input focus prevention."""       
         if event.key == "1":
             self.action_goto_screen_1()
         elif event.key == "2":
