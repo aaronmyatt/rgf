@@ -3,12 +3,20 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 name = "pypi"
 
+[scripts]
+cov = "python -m pytest --cov=. tests/"
+cli = "textual run --dev cli.py"
+console = "textual run console"
+text = "python -m pytest"
+
 [packages]
 textual = "*"
 grep-ast = "*"
 textual-dev = "*"
 sqlite-utils = "*"
 pytest = "*"
+pytest-cov = "*"
+pytest-asyncio = "*"
 
 [dev-packages]
 
