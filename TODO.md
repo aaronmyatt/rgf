@@ -8,3 +8,4 @@
     [] add match to flow
 [] flows screen
 [] flow (singular) screen
+[] BUG: fix datatable throwing when the same rows are added. How can we defend against it? Always clear the table on input submission? Or iterate through existing rows for rows with the same key/id?
