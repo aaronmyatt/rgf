@@ -7,7 +7,7 @@ name = "pypi"
 cov = "python -m pytest --cov=. tests/"
 cli = "textual run --dev cli.py"
 console = "textual run console"
-text = "python -m pytest"
+test = "python -m pytest --pdb --pdbcls=IPython.terminal.debugger:TerminalPdb"
 
 [packages]
 textual = "*"
@@ -17,6 +17,8 @@ sqlite-utils = "*"
 pytest = "*"
 pytest-cov = "*"
 pytest-asyncio = "*"
+ipython = "*"
+ipdb = "*"
 
 [dev-packages]
 

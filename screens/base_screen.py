@@ -29,14 +29,13 @@ class BaseScreen(Screen):
             self.app.exit()
 
     def action_goto_screen_1(self):
-        self.app.push_screen(self.app.screen_search)
+        self.app.push_screen('search')
 
     def action_goto_screen_2(self):
-        self.app.push_screen(self.app.screen_blank2)
+        self.app.push_screen('blank2')
 
     def action_goto_screen_3(self):
-        self.app.push_screen(self.app.screen_blank3)
+        self.app.push_screen('blank3')
 
     def action_unfocus_all(self):
-        if self.focused:
-            self.focused.blur()
+        self.set_focus(None)

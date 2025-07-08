@@ -6,6 +6,7 @@ from .base_screen import BaseScreen
 
 
 class BlankScreen3(BaseScreen):
+    id = "blank3"
     BINDINGS = BaseScreen.COMMON_BINDINGS + []
     
     def compose(self) -> ComposeResult:

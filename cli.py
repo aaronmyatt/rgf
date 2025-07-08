@@ -14,14 +14,10 @@ class RGApp(App):
         self.user_grep = args
 
     def on_mount(self):
-        # Register screens
-        self.screen_search = SearchScreen(self.user_grep)
-        self.screen_blank2 = BlankScreen2()
-        self.screen_blank3 = BlankScreen3()
-        self.install_screen(self.screen_search, name="search")
-        self.install_screen(self.screen_blank2, name="blank2")
-        self.install_screen(self.screen_blank3, name="blank3")
-        self.push_screen(self.screen_search)
+        self.install_screen(screen=SearchScreen, name='search')
+        self.install_screen(screen=BlankScreen2, name='blank2')
+        self.install_screen(screen=BlankScreen3, name='blank3')
+        self.push_screen('search')  # Start on the search screen
 
 if __name__ == "__main__":
     from waystation import init_waystation

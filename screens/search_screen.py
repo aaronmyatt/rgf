@@ -57,6 +57,8 @@ class SearchScreen(BaseScreen):
 }
 '''
 
+    id = "search"
+    title = "Ripgrep > grep-ast Browser"
     BINDINGS = BaseScreen.COMMON_BINDINGS + [
         Binding(key="up", action="cursor_up", description="Cursor Up", show=True),
         Binding(key="down", action="cursor_down", description="Cursor Down", show=True),
@@ -156,7 +158,3 @@ class SearchScreen(BaseScreen):
         self.matches = []
         self.dg.clear()
         pattern_input.focus()
-
-    def action_unfocus_all(self):
-        if self.focused:
-            self.focused.blur()
