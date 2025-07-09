@@ -34,9 +34,10 @@ class UserGrepInput(Container):
 
 
 class GrepAstPreview(Static):
+    id="grep_ast_preview"
+
     def update_preview(self, match: Match):
         self.update(get_grep_ast_preview(match))
-
 
 class SearchScreen(BaseScreen):
     CSS = '''
@@ -68,7 +69,7 @@ class SearchScreen(BaseScreen):
 
     def __init__(self, user_grep: UserGrep = None):
         super().__init__()
-        self.user_grep = user_grep
+        self.user_grep = user_grep or self.app.user_grep
         self.matches: list[Match] = []
         self.dg = None
         self.preview = None
@@ -99,8 +100,11 @@ class SearchScreen(BaseScreen):
             self.dg.focus()
             self.dg.cursor_coordinate = 0, 0
             self.update_preview(0)
+        else:  # No matches found
+            self.update_preview(0)
 
     async def on_input_submitted(self, event):
+        self.dg.clear()
         pattern = self.query_one("#pattern_input").value
         paths = self.query_one("#paths_input").value.split()
         self.user_grep = UserGrep(pattern, paths)
@@ -111,15 +115,19 @@ class SearchScreen(BaseScreen):
             match = self.matches[idx]
             self.preview.update_preview(match)
         except Exception as e:
-            self.preview.update(str(e))
+            self.preview.update_preview(Match("<no preview>", 0, str(e)))
 
     def action_cursor_up(self):
-        idx = self.dg.cursor_coordinate.row
-        self.update_preview(idx-1)
+        cursor_coordinate = self.dg.cursor_coordinate
+        cell_key = self.dg.coordinate_to_cell_key(cursor_coordinate)
+        row_key, _ = cell_key
+        self.update_preview(row_key.value - 1)
 
     def action_cursor_down(self):
-        idx = self.dg.cursor_coordinate.row
-        self.update_preview(idx-1)
+        cursor_coordinate = self.dg.cursor_coordinate
+        cell_key = self.dg.coordinate_to_cell_key(cursor_coordinate)
+        row_key, _ = cell_key
+        self.update_preview(row_key.value + 1)
 
     def on_key(self, event: events.Key) -> None:
         # Prevent screen switching if an Input is focused

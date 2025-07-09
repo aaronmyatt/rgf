@@ -52,7 +52,7 @@ def get_grep_ast_preview(match: Match):
     """
     try:
         result = subprocess.run(
-            ['grep-ast', match.filename],
+            ['grep-ast', Path(match.filename).absolute()],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True
@@ -72,6 +72,6 @@ def get_grep_ast_preview(match: Match):
                     context.append(f"{lines[idx+1].rstrip()}")
                 return "\n".join(context)
         except Exception as e:
-            return f"<no preview>\n{e}"
+            return f"<no preview>"
     except FileNotFoundError:
-        return "grep-ast not found."
+        return "<no preview>"

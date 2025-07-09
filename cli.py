@@ -9,9 +9,9 @@ from screens import SearchScreen, BlankScreen2, BlankScreen3
 class RGApp(App):
     CSS_PATH = 'styles.tcss'
 
-    def __init__(self, args: UserGrep = None):
+    def __init__(self, user_grep: UserGrep = None):
         super().__init__()
-        self.user_grep = args
+        self.user_grep = user_grep
 
     def on_mount(self):
         self.install_screen(screen=SearchScreen, name='search')

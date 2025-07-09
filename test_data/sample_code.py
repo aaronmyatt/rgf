@@ -1,7 +1,7 @@
 import asyncio
 from dataclasses import dataclass
 
-async def test_input_submission_returns_matches():
+async def test_some_async_operation():
     """This is the target function we want to find"""
     result = await some_async_operation()
     return result
