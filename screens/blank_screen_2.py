@@ -2,7 +2,6 @@ from textual.binding import Binding
 from textual.app import ComposeResult
 from textual.widgets import Static, Footer, ListView, ListItem, Label, Input
 from textual import events
-from textual.screen import Screen
 from .base_screen import BaseScreen
 
 
