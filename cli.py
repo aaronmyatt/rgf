@@ -19,7 +19,8 @@ class RGApp(App):
         self.install_screen(screen=BlankScreen3, name='blank3')
         self.push_screen('search')  # Start on the search screen
 
-if __name__ == "__main__":
+
+if __name__ == "__main__": # pragma: no cover
     from waystation import init_waystation
     import argparse
 

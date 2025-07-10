@@ -8,6 +8,7 @@ cov = "python -m pytest --cov=. tests/"
 cli = "textual run --dev cli.py"
 console = "textual run console"
 test = "python -m pytest --pdb --pdbcls=IPython.terminal.debugger:TerminalPdb"
+fail = "python -m pytest -x"
 
 [packages]
 textual = "*"

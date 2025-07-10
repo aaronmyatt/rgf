@@ -1,7 +1,6 @@
 from typing import Optional
 from db import (
-    get_db,
-    Flow, Match, FlowMatch, MatchNote, FlowHistory,
+    Flow, Match, FlowMatch, MatchNote, FlowHistory, FlowHistoryResult,
     insert_row, get_row, update_row, archive_row, list_rows
 )
 
@@ -51,14 +50,13 @@ def get_active_flow_id(db) -> Optional[int]:
     """Get the currently active flow id (most recent in flow_history).
     Returns None if the most recent flow is archived or if there's no history."""
     result = db.execute("""
-        SELECT fh.flow_id 
+        SELECT fh.flow_id, f.archived
         FROM flow_history fh
         LEFT JOIN flows f ON fh.flow_id = f.id
-        WHERE f.archived = FALSE OR f.archived IS NULL
         ORDER BY fh.created_at DESC, fh.id DESC
         LIMIT 1
     """).fetchone()
-    return result[0] if result and result[0] is not None else None
+    return result[0] if result and result[1] is 0 else None
 
 def get_active_flow(db) -> Optional[Flow]:
     """Get the currently active flow object."""
@@ -69,11 +67,11 @@ def get_active_flow(db) -> Optional[Flow]:
 
 def get_flow_history(db, limit: int = 10) -> list:
     """Get recent flow history with flow details."""
-    return list(db.execute("""
+    return [FlowHistoryResult(*fh) for fh in db.execute("""
         SELECT fh.id, fh.flow_id, fh.created_at, f.name, f.description
         FROM flow_history fh
         JOIN flows f ON fh.flow_id = f.id
         WHERE f.archived = FALSE
         ORDER BY fh.created_at DESC
         LIMIT ?
-    """, [limit]))
+    """, [limit]).fetchall()]

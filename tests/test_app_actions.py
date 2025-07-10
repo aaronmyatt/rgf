@@ -31,15 +31,25 @@ def sample_flow():
     return Flow(name="Test Flow", description="A test flow")
 
 
+
+# @dataclass
+# class Match:
+#     id: Optional[int] = None
+#     line: str = ""
+#     file_path: str = ""
+#     file_name: str = ""
+#     grep_meta: Optional[str] = None
+#     created_at: Optional[str] = None
+#     updated_at: Optional[str] = None
+#     archived: bool = False
 @pytest.fixture
 def sample_match():
     """Create a sample match for testing."""
     return Match(
         file_path="/path/to/file.py",
-        line_number=42,
-        column_number=10,
-        content="test content",
-        pattern="test"
+        file_name="file.py",
+        line="test content",
+        grep_meta= '{"line_number": 1, "file_path": "/path/to/file.py"}',
     )
 
 
@@ -110,8 +120,8 @@ class TestMatchOperations:
         saved_match = Match(*saved_match_row)
         assert saved_match is not None
         assert saved_match.file_path == sample_match.file_path
-        assert saved_match.line_number == sample_match.line_number
-        assert saved_match.content == sample_match.content
+        assert saved_match.grep_meta == sample_match.grep_meta
+        assert saved_match.line == sample_match.line
 
     def test_archive_match(self, db, sample_match):
         """Test archiving a match."""
@@ -260,7 +270,7 @@ class TestFlowActivation:
         assert active_flow.id == flow_id
         assert active_flow.name == sample_flow.name
 
-    def test_get_active_flow_with_archived_flow(self, db, sample_flow):
+    def test_cannot_get_active_flow_with_archived_flow(self, db, sample_flow):
         """Test getting active flow when the active flow has been archived."""
         flow_id = new_flow(db, sample_flow)
         sample_flow.id = flow_id
@@ -269,8 +279,25 @@ class TestFlowActivation:
         
         # Should still return the flow even if it's archived
         active_flow = get_active_flow(db)
-        assert active_flow is not None
-        assert active_flow.id == flow_id
+        assert active_flow is None
+
+    def test_returns_none_when_last_active_flow_archived(self, db):
+        """Test that get_active_flow_id returns the most recent activation."""
+        # Create two flows
+        flow1 = Flow(name="Flow 1", description="First flow")
+        flow2 = Flow(name="Flow 2", description="Second flow")
+        
+        flow1_id = new_flow(db, flow1)
+        flow2_id = new_flow(db, flow2)
+        
+        # Activate flow1, then flow2
+        activate_flow(db, flow1_id)
+        activate_flow(db, flow2_id)
+        archive_flow(db, get_active_flow(db))
+        
+        # Should return flow2_id as it was activated most recently
+        active_flow_id = get_active_flow_id(db)
+        assert active_flow_id is None
 
 
 class TestFlowHistory:
@@ -296,13 +323,13 @@ class TestFlowHistory:
         
         assert len(history) == 3
         # Should be ordered by most recent first
-        assert history[0]["flow_id"] == flow1_id
-        assert history[1]["flow_id"] == flow2_id
-        assert history[2]["flow_id"] == flow1_id
+        assert history[0].flow_id == flow1_id
+        assert history[1].flow_id == flow2_id
+        assert history[2].flow_id == flow1_id
         
         # Check that flow details are included
-        assert history[0]["name"] == "Flow 1"
-        assert history[1]["name"] == "Flow 2"
+        assert history[0].name == "Flow 1"
+        assert history[1].name == "Flow 2"
 
     def test_get_flow_history_with_limit(self, db):
         """Test getting flow history with a custom limit."""
@@ -337,5 +364,5 @@ class TestFlowHistory:
         
         # Should only include flow2's activation
         assert len(history) == 1
-        assert history[0]["flow_id"] == flow2_id
-        assert history[0]["name"] == "Flow 2"
+        assert history[0].flow_id == flow2_id
+        assert history[0].name == "Flow 2"

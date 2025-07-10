@@ -65,14 +65,19 @@ class FlowHistory:
     flow_id: int = 0
     created_at: Optional[str] = None
 
+@dataclass
+class FlowHistoryResult(FlowHistory):
+    name: str = ""
+    description: Optional[str] = None
+
 # --- Utility functions ---
 
-def insert_row(db, table: str, row):
+def insert_row(db, table: str, row: T) -> int:
     """Insert a dataclass row into the table. Returns the inserted row id."""
     data = asdict(row)
     data = {k: v for k, v in data.items() if v is not None and k != "id"}
     table = db[table].insert(data, pk="id")
-    return table.last_rowid
+    return table.last_pk
 
 def get_row(db, table: str, row_id: int, cls: Type[T]) -> Optional[T]:
     """Get a row by id and return as dataclass instance."""
