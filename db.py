@@ -33,6 +33,7 @@ class Match:
     line: str = ""
     file_path: str = ""
     file_name: str = ""
+    line_no: int = 0
     grep_meta: Optional[str] = None
     created_at: Optional[str] = None
     updated_at: Optional[str] = None

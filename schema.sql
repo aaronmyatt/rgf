@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS matches (
     line TEXT NOT NULL,
     file_path TEXT NOT NULL,
     file_name TEXT NOT NULL,
+    line_no INTEGER NOT NULL, -- stores the line number in the file
     grep_meta TEXT, -- stores grep metadata as JSON
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
