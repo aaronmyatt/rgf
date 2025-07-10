@@ -1,4 +1,5 @@
 from textual.app import App
+import sqlite_utils
 
 # Import shared logic from waystation.py
 from waystation import UserGrep
@@ -9,8 +10,9 @@ from screens import SearchScreen, BlankScreen2, BlankScreen3
 class RGApp(App):
     CSS_PATH = 'styles.tcss'
 
-    def __init__(self, user_grep: UserGrep = None):
+    def __init__(self, db: sqlite_utils.Database, user_grep: UserGrep = None):
         super().__init__()
+        self.db = db
         self.user_grep = user_grep
 
     def on_mount(self):
@@ -25,7 +27,7 @@ if __name__ == "__main__": # pragma: no cover
     import argparse
 
     # Initialize the database and $HOME/.waystation directory
-    init_waystation()
+    db = init_waystation()
 
     parser = argparse.ArgumentParser(description="Textual ripgrep-ast browser")
     parser.add_argument('pattern', nargs='?', help="Pattern to search")
@@ -33,6 +35,6 @@ if __name__ == "__main__": # pragma: no cover
     args = parser.parse_args()
 
     if args.pattern is None:
-        RGApp().run()
+        RGApp(db).run()
     else:
-        RGApp(UserGrep(args.pattern, args.paths)).run()
+        RGApp(db, UserGrep(args.pattern, args.paths)).run()
