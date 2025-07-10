@@ -1,4 +1,5 @@
 import sqlite_utils
+from sqlite_utils.db import NotFoundError
 from dataclasses import asdict, dataclass, fields
 from typing import Type, TypeVar, List, Optional
 
@@ -82,10 +83,12 @@ def insert_row(db, table: str, row: T) -> int:
 
 def get_row(db, table: str, row_id: int, cls: Type[T]) -> Optional[T]:
     """Get a row by id and return as dataclass instance."""
-    row = db[table].get(row_id)
-    if row:
-        return cls(**row)
-    return None
+    try:
+        row = db[table].get(row_id)
+        if row:
+            return cls(**row)
+    except NotFoundError:
+        return None
 
 def update_row(db, table: str, row_id: int, row):
     """Update a row by id using dataclass."""

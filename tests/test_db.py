@@ -76,3 +76,28 @@ def test_matchnote_crud(db):
     archive_row(db, "match_notes", note_id)
     archived = get_row(db, "match_notes", note_id, MatchNote)
     assert archived.archived is 1
+
+def test_list_rows(db):
+    # Insert some test data
+    for i in range(5):
+        insert_row(db, "matches", Match(line=f"line {i}", file_path=f"/tmp/file{i}.py", file_name=f"file{i}.py"))
+
+    # List all matches
+    matches = list_rows(db, "matches", Match)
+    assert len(matches) == 5
+
+    # List archived matches (should be none)
+    archived_matches = list_rows(db, "matches", Match, "archived=1")
+    assert len(archived_matches) == 0
+
+    # Archive one match and check listing
+    match_id = matches[0].id
+    archive_row(db, "matches", match_id)
+    archived_matches = list_rows(db, "matches", Match, "archived=1")
+    assert len(archived_matches) == 1
+    assert archived_matches[0].id == match_id
+
+def test_get_row_not_found(db):
+    # Test getting a row that doesn't exist
+    assert get_row(db, "matches", 9999, Match) is None
+        
