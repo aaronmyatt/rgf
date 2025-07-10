@@ -49,12 +49,12 @@ def activate_flow(db, flow_id: int) -> int:
 
 def get_active_flow_id(db) -> Optional[int]:
     """Get the currently active flow id (most recent in flow_history)."""
-    result = list(db.execute("""
+    result = db.execute("""
         SELECT flow_id FROM flow_history 
-        ORDER BY created_at DESC 
+        ORDER BY created_at DESC, id DESC
         LIMIT 1
-    """))
-    return result[0]["flow_id"] if result else None
+    """).fetchone()
+    return result[0] if result else None
 
 def get_active_flow(db) -> Optional[Flow]:
     """Get the currently active flow object."""
