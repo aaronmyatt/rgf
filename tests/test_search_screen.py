@@ -1,11 +1,23 @@
 import pytest
+import os
+import tempfile
+from db import get_db
 from cli import RGApp
 from waystation import UserGrep, Match
 from textual.widgets import Input, DataTable
 
+@pytest.fixture
+def db():
+    # Use a temporary file for the database
+    with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as tf:
+        db_path = tf.name
+    schema_path = os.path.join(os.path.dirname(__file__), "../schema.sql")
+    db = get_db(db_path, schema_path)
+    yield db
+    os.remove(db_path)
 
-async def test_input_submission_returns_matches():
-    app = RGApp()
+async def test_input_submission_returns_matches(db):
+    app = RGApp(db)
     async with app.run_test() as pilot:
         pattern_input = app.screen.query_one('#pattern_input')
         paths_input = app.screen.query_one('#paths_input')
@@ -15,15 +27,15 @@ async def test_input_submission_returns_matches():
 
         await pilot.press("enter")
         assert len(app.screen.matches) == 1
-        assert "test_data/sample_code.py" in app.screen.matches[0].filename
+        assert "test_data/sample_code.py" in app.screen.matches[0].file_path
         datatable = app.screen.query_one('#matches_table')
         assert len(datatable.rows) == 1
 
 
-async def test_search_screen_initialization_with_user_grep():
+async def test_search_screen_initialization_with_user_grep(db):
     """Test that the search screen initializes correctly with UserGrep arguments."""
     user_grep = UserGrep("test", ["test_data/"])
-    app = RGApp(user_grep)
+    app = RGApp(db, user_grep)
     async with app.run_test() as pilot:
         assert app.user_grep == user_grep
         assert len(app.screen.matches) > 0
@@ -31,17 +43,17 @@ async def test_search_screen_initialization_with_user_grep():
         assert len(datatable.rows) > 0
 
 
-async def test_search_screen_initialization_without_args():
+async def test_search_screen_initialization_without_args(db):
     """Test that the search screen focuses on pattern input when no args provided."""
-    app = RGApp()
+    app = RGApp(db)
     async with app.run_test() as pilot:
         pattern_input = app.screen.query_one('#pattern_input')
         assert app.screen.focused == pattern_input
 
-async def test_data_table_row_selection_updates_preview():
+async def test_data_table_row_selection_updates_preview(db):
     """Test that selecting a row in the data table updates the preview."""
     user_grep = UserGrep("class", ["./test_data/"])
-    app = RGApp(user_grep)
+    app = RGApp(db, user_grep)
     async with app.run_test() as pilot:
         datatable = app.screen.query_one('#matches_table')
         datatable.focus()
@@ -63,10 +75,10 @@ async def test_data_table_row_selection_updates_preview():
         assert preview11 == preview1
 
 
-async def test_new_search_action():
+async def test_new_search_action(db):
     """Test that the new search action clears data and focuses input."""
     user_grep = UserGrep("test", ["test_data/"])
-    app = RGApp(user_grep)
+    app = RGApp(db, user_grep)
     async with app.run_test() as pilot:
         # Initially should have matches
         assert len(app.screen.matches) > 0
@@ -84,9 +96,9 @@ async def test_new_search_action():
         assert len(datatable.rows) == 0
 
 
-async def test_empty_search_pattern():
+async def test_empty_search_pattern(db):
     """Test behavior when submitting an empty search pattern."""
-    app = RGApp()
+    app = RGApp(db)
     async with app.run_test() as pilot:
         pattern_input = app.screen.query_one('#pattern_input')
         paths_input = app.screen.query_one('#paths_input')
@@ -100,9 +112,9 @@ async def test_empty_search_pattern():
         assert len(app.screen.matches) > 0
 
 
-async def test_search_with_multiple_paths():
+async def test_search_with_multiple_paths(db):
     """Test searching across multiple paths."""
-    app = RGApp()
+    app = RGApp(db)
     async with app.run_test() as pilot:
         pattern_input = app.screen.query_one('#pattern_input')
         paths_input = app.screen.query_one('#paths_input')
@@ -113,14 +125,14 @@ async def test_search_with_multiple_paths():
         await pilot.press("enter")
         # Should find matches in both directories
         assert len(app.screen.matches) > 0
-        assert any("test_data/" in match.filename for match in app.screen.matches)
-        assert any("tests/" in match.filename for match in app.screen.matches)
+        assert any("test_data/" in match.file_path for match in app.screen.matches)
+        assert any("tests/" in match.file_path for match in app.screen.matches)
 
 
 
-async def test_should_clear_data_table_on_resubmission():
+async def test_should_clear_data_table_on_resubmission(db):
     """Test behavior when search returns no matches."""
-    app = RGApp()
+    app = RGApp(db)
     async with app.run_test() as pilot:
         pattern_input = app.screen.query_one('#pattern_input')
         paths_input = app.screen.query_one('#paths_input')
@@ -136,9 +148,9 @@ async def test_should_clear_data_table_on_resubmission():
         await pilot.press("enter")
         assert len(app.screen.matches) > 0  
 
-async def test_search_no_matches():
+async def test_search_no_matches(db):
     """Test behavior when search returns no matches."""
-    app = RGApp()
+    app = RGApp(db)
     async with app.run_test() as pilot:
         pattern_input = app.screen.query_one('#pattern_input')
         paths_input = app.screen.query_one('#paths_input')
@@ -154,9 +166,9 @@ async def test_search_no_matches():
         assert preview == '<no preview>'  # No preview should be shown
 
 
-async def test_escape_key_unfocuses_input():
+async def test_escape_key_unfocuses_input(db):
     """Test that escape key unfocuses input fields."""
-    app = RGApp()
+    app = RGApp(db)
     async with app.run_test() as pilot:
         pattern_input = app.screen.query_one('#pattern_input')
         pattern_input.focus()
@@ -165,9 +177,9 @@ async def test_escape_key_unfocuses_input():
         assert app.screen.focused != pattern_input
 
 
-async def test_screen_navigation_blocked_when_input_focused():
+async def test_screen_navigation_blocked_when_input_focused(db):
     """Test that screen navigation keys are blocked when input is focused."""
-    app = RGApp()
+    app = RGApp(db)
     async with app.run_test() as pilot:
         pattern_input = app.screen.query_one('#pattern_input')
         pattern_input.focus()
@@ -182,9 +194,9 @@ async def test_screen_navigation_blocked_when_input_focused():
         assert pattern_input.value == "123"
 
 
-async def test_preview_error_handling():
+async def test_preview_error_handling(db):
     """Test that preview handles errors gracefully."""
-    app = RGApp()
+    app = RGApp(db)
     async with app.run_test() as pilot:
         # Create a scenario that might cause preview errors
         app.screen.matches = [Match("nonexistent.py", 1, "test content")]
@@ -208,19 +220,19 @@ async def test_save_match_to_database_binding(db):
         
         await pilot.press("s")
         
-        matches = db.execute("SELECT * FROM matches").fetchall()
+        matches = list(db.table('matches').rows)
         assert len(matches) == initial_count + 1
         
         saved_match = matches[-1]
-        assert saved_match['file_path'] == current_match.filename
-        assert saved_match['line'] == current_match.content
-        assert saved_match['file_name'] == current_match.filename.split('/')[-1]
+        assert saved_match['file_path'] == current_match.file_path
+        assert saved_match['line'] == current_match.line
+        assert saved_match['file_name'] == current_match.file_name.split('/')[-1]
         assert saved_match['archived'] == 0  # Should be saved as active
 
-async def test_open_in_editor_action():
+async def test_open_in_editor_action(db):
     """Test the open in editor action (mocked)."""
     user_grep = UserGrep("def", ["test_data/"])
-    app = RGApp(user_grep)
+    app = RGApp(db, user_grep)
     async with app.run_test() as pilot:
         datatable = app.screen.query_one('#matches_table')
         datatable.focus()
