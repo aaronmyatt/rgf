@@ -48,10 +48,14 @@ def activate_flow(db, flow_id: int) -> int:
     return insert_row(db, "flow_history", flow_history)
 
 def get_active_flow_id(db) -> Optional[int]:
-    """Get the currently active flow id (most recent in flow_history)."""
+    """Get the currently active flow id (most recent in flow_history).
+    Returns None if the most recent flow is archived."""
     result = db.execute("""
-        SELECT flow_id FROM flow_history 
-        ORDER BY created_at DESC, id DESC
+        SELECT fh.flow_id 
+        FROM flow_history fh
+        JOIN flows f ON fh.flow_id = f.id
+        WHERE f.archived = FALSE
+        ORDER BY fh.created_at DESC, fh.id DESC
         LIMIT 1
     """).fetchone()
     return result[0] if result else None
