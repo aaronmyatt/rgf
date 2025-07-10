@@ -3,7 +3,12 @@
     [x] matches
     [x] flow_matches
     [x] match_notes
-[] mark/save match
+[x] mark/save match
+    [x] save to db
+    [x] keybinding (s)
+    [] show notification on save
+    [] highlight saved rows
+        [] maybe a count somewhere?
     [] create flow if it doesn't exist
     [] add match to flow
 [] flows screen
