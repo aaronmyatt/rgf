@@ -13,7 +13,6 @@ from .base_screen import BaseScreen
 from waystation import Match, UserGrep, get_rg_matches, get_grep_ast_preview
 from app_actions import save_match
 
-
 class UserGrepInput(Container):
     """
     Custom Input widget for UserGrep pattern input.
@@ -98,7 +97,7 @@ class SearchScreen(BaseScreen):
 
         if self.matches:
             for idx, match in enumerate(self.matches):
-                self.dg.add_row(match.filename, str(match.line_no), Content(match.content), key=idx)
+                self.dg.add_row(match.file_name, str(match.line_no), Content(match.line), key=idx)
             self.dg.focus()
             self.dg.cursor_coordinate = 0, 0
             self.update_preview(0)
@@ -163,17 +162,8 @@ class SearchScreen(BaseScreen):
         """Save the currently selected match to the database."""
         if not self.matches:
             return
-        idx = self.dg.cursor_coordinate.row
-        ui_match = self.matches[idx]
-        
-        # Convert to database Match format
-        db_match = Match(
-            line=ui_match.content,
-            file_path=ui_match.filename,
-            file_name=ui_match.filename.split('/')[-1],
-            grep_meta=None  # Can be populated later if needed
-        )
-        save_match(self.app.db, db_match)
+        idx = self.dg.cursor_coordinate.row      
+        save_match(self.app.db, self.matches[idx])
 
     def action_new_search(self):
         """Focus on the pattern input and clear it for a new search."""
