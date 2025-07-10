@@ -11,6 +11,7 @@ from .base_screen import BaseScreen
 
 # Import shared logic from waystation.py
 from waystation import Match, UserGrep, get_rg_matches, get_grep_ast_preview
+from app_actions import save_match
 
 
 class UserGrepInput(Container):
@@ -65,6 +66,7 @@ class SearchScreen(BaseScreen):
         Binding(key="down", action="cursor_down", description="Cursor Down", show=True),
         Binding(key="enter", action="open_in_editor", description="Open in editor", show=True),
         Binding(key="n", action="new_search", description="New Search", show=True),
+        Binding(key="s", action="save_match", description="Save Match", show=True),
     ]
 
     def __init__(self, user_grep: UserGrep = None):
@@ -156,6 +158,22 @@ class SearchScreen(BaseScreen):
                 system(f'$EDITOR {match.filename} +{match.line_no}')
         except Exception as e:
             self.app.exit(str(e))
+
+    def action_save_match(self):
+        """Save the currently selected match to the database."""
+        if not self.matches:
+            return
+        idx = self.dg.cursor_coordinate.row
+        ui_match = self.matches[idx]
+        
+        # Convert to database Match format
+        db_match = Match(
+            line=ui_match.content,
+            file_path=ui_match.filename,
+            file_name=ui_match.filename.split('/')[-1],
+            grep_meta=None  # Can be populated later if needed
+        )
+        save_match(self.app.db, db_match)
 
     def action_new_search(self):
         """Focus on the pattern input and clear it for a new search."""

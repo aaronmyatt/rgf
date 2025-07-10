@@ -192,6 +192,31 @@ async def test_preview_error_handling():
         # Should not crash and should display error message
         assert app.screen.preview._content == "<no preview>"
 
+async def test_save_match_to_database_binding(db):
+    """Test that pressing 's' saves the current match to the database."""
+    user_grep = UserGrep("def", ["test_data/"])
+    app = RGApp(db, user_grep)
+    
+    async with app.run_test() as pilot:
+        datatable = app.screen.query_one('#matches_table')
+        datatable.focus()
+        
+        current_row = datatable.cursor_coordinate.row
+        current_match = app.screen.matches[current_row]
+        
+        initial_count = len(db.execute("SELECT * FROM matches").fetchall())
+        
+        await pilot.press("s")
+        
+        matches = db.execute("SELECT * FROM matches").fetchall()
+        assert len(matches) == initial_count + 1
+        
+        saved_match = matches[-1]
+        assert saved_match['file_path'] == current_match.filename
+        assert saved_match['line'] == current_match.content
+        assert saved_match['file_name'] == current_match.filename.split('/')[-1]
+        assert saved_match['archived'] == 0  # Should be saved as active
+
 async def test_open_in_editor_action():
     """Test the open in editor action (mocked)."""
     user_grep = UserGrep("def", ["test_data/"])
