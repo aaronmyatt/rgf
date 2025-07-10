@@ -11,6 +11,10 @@ class Match:
     filename: str
     line_no: int
     content: str
+    file_path: str = ""
+    file_name: str = ""
+    grep_meta: Optional[str] = None
+    archived: bool = False
 
 @dataclass
 class UserGrep:
