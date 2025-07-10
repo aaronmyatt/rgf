@@ -1,31 +1,33 @@
 import pytest
+import os
+import tempfile
+from db import get_db
 from cli import RGApp
 from waystation import UserGrep
 
+@pytest.fixture
+def db():
+    # Use a temporary file for the database
+    with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as tf:
+        db_path = tf.name
+    schema_path = os.path.join(os.path.dirname(__file__), "../schema.sql")
+    db = get_db(db_path, schema_path)
+    yield db
+    os.remove(db_path)
 
-# async def test_app_initialization():
-#     """Test that the app initializes correctly without arguments."""
-#     app = RGApp()
-#     async with app.run_test() as pilot:
-#         raise
-#         await app.push_screen(app.SCREENS['search']())  # Ensure we start on the search screen
-#         assert app.user_grep is None
-#         assert app.screen.id == "search"
-
-
-async def test_app_initialization_with_args():
+async def test_app_initialization_with_args(db):
     """Test that the app initializes correctly with UserGrep arguments."""
     user_grep = UserGrep("test_pattern", ["."])
-    app = RGApp(user_grep)
+    app = RGApp(db, user_grep)
     async with app.run_test() as pilot:
         assert app.is_screen_installed("search")
         assert len(app.screen_stack) > 0
         assert app.user_grep == user_grep
         assert app.screen.id == "search"
 
-async def test_screen_navigation():
+async def test_screen_navigation(db):
     """Test navigation between screens using key bindings."""
-    app = RGApp()
+    app = RGApp(db)
     async with app.run_test() as pilot:
         await pilot.press("escape")  # to clear initial input focus
 
@@ -47,9 +49,9 @@ async def test_screen_navigation():
 
 # TODO - confusing test, needs to be fixed
 @pytest.mark.skip(reason="This test is currently not working as expected")
-async def test_screens_are_installed():
+async def test_screens_are_installed(db):
     """Test that all screens are properly installed."""
-    app = RGApp()
+    app = RGApp(db)
     async with app.run_test() as pilot:
         # Check that all screens are installed
         await pilot.press("2")
@@ -59,9 +61,9 @@ async def test_screens_are_installed():
         assert "blank3" in [screen.id for screen in app.screen_stack]
 
 
-async def test_unfocus_all_action():
+async def test_unfocus_all_action(db):
     """Test the unfocus all action works on all screens."""
-    app = RGApp()
+    app = RGApp(db)
     async with app.run_test() as pilot:
         # Test on search screen
         await pilot.press("escape")
