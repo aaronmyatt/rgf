@@ -65,9 +65,10 @@ class TestFlowOperations:
         
         # Verify the flow was saved correctly
         saved_flow = db.execute("SELECT * FROM flows WHERE id = ?", [flow_id]).fetchone()
+        flow = Flow(*saved_flow)
         assert saved_flow is not None
-        assert saved_flow["name"] == sample_flow.name
-        assert saved_flow["description"] == sample_flow.description
+        assert flow.name == sample_flow.name
+        assert flow.description == sample_flow.description
 
     # def test_rename_flow(self, db, sample_flow):
     #     """Test renaming a flow."""
@@ -94,7 +95,7 @@ class TestFlowOperations:
     #     assert archived_flow["archived"] == 1
 
 
-class TestMatchOperations:
+# class TestMatchOperations:
     # def test_save_match(self, db, sample_match):
     #     """Test saving a new match."""
     #     match_id = save_match(db, sample_match)
@@ -121,7 +122,7 @@ class TestMatchOperations:
     #     assert archived_match["archived"] == 1
 
 
-class TestMatchNoteOperations:
+# class TestMatchNoteOperations:
     # def test_add_match_note(self, db, sample_match, sample_match_note):
     #     """Test adding a note to a match."""
     #     match_id = save_match(db, sample_match)
@@ -152,7 +153,7 @@ class TestMatchNoteOperations:
     #     assert archived_note["archived"] == 1
 
 
-class TestFlowMatchOperations:
+# class TestFlowMatchOperations:
     # def test_add_match_to_flow(self, db, sample_flow, sample_match, sample_flow_match):
     #     """Test adding a match to a flow."""
     #     flow_id = new_flow(db, sample_flow)
@@ -190,7 +191,7 @@ class TestFlowMatchOperations:
     #     assert archived_flow_match["archived"] == 1
 
 
-class TestFlowActivation:
+# class TestFlowActivation:
     # def test_activate_flow(self, db, sample_flow):
     #     """Test activating a flow."""
     #     flow_id = new_flow(db, sample_flow)
@@ -263,7 +264,7 @@ class TestFlowActivation:
     #     assert active_flow.id == flow_id
 
 
-class TestFlowHistory:
+# class TestFlowHistory:
     # def test_get_flow_history_empty(self, db):
     #     """Test getting flow history when no flows have been activated."""
     #     history = get_flow_history(db)
