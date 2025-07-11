@@ -62,7 +62,7 @@ def sample_match_note():
 @pytest.fixture
 def sample_flow_match():
     """Create a sample flow match for testing."""
-    return FlowMatch(flow_id=1, match_id=1, order_index=0)
+    return FlowMatch(flows_id=1, matches_id=1, order_index=0)
 
 
 class TestFlowOperations:
@@ -135,6 +135,34 @@ class TestMatchOperations:
         archived_match = Match(*archived_match_row)
         assert archived_match.archived == 1
 
+def test_save_match_and_links_to_active_flow(db, sample_flow):
+    from db import Match
+    from app_actions import save_match, get_active_flow_id
+
+    flow_id = new_flow(db, sample_flow)
+    active_flow_id = activate_flow(db, flow_id)
+    assert get_active_flow_id(db) is not None
+
+    # Prepare a match (minimal required fields)
+    match = Match(
+        line="test line",
+        file_path="/tmp/test.py",
+        file_name="test.py",
+        line_no=1,
+        grep_meta='{"line_number": 1, "file_path": "/tmp/test.py"}'
+    )
+
+    # Save the match (should create a new flow and link the match)
+    match_id = save_match(db, match)
+
+    # The match should exist
+    saved_match_row = db.execute("SELECT * FROM matches WHERE id = ?", [match_id]).fetchone()
+    assert saved_match_row is not None, "Match should be saved"
+
+    # The match should be linked to the new flow via flow_matches (m2m)
+    linked_matches = db.query('SELECT * FROM flow_matches WHERE id = :flows_id;', {"flows_id": active_flow_id})
+    match_ids = [m["id"] for m in linked_matches]
+    assert match_id in match_ids, "Match should be linked to the new flow via m2m"
 
 def test_save_match_creates_flow_and_links_match_if_no_active_flow(db):
     """
@@ -168,14 +196,9 @@ def test_save_match_creates_flow_and_links_match_if_no_active_flow(db):
     assert saved_match_row is not None, "Match should be saved"
 
     # The match should be linked to the new flow via flow_matches (m2m)
-    flows = db.table("flows", pk="id")
-    matches = db.table("matches", pk="id")
-    linked_matches = list(flows.get(active_flow_id).m2m(matches))
+    linked_matches = db.query('SELECT * FROM flow_matches WHERE id = :flows_id;', {"flows_id": active_flow_id})
     match_ids = [m["id"] for m in linked_matches]
     assert match_id in match_ids, "Match should be linked to the new flow via m2m"
-
-    # This test is expected to fail until the feature is implemented
-    assert False, "This test is expected to fail until the feature is implemented"
 
 class TestMatchNoteOperations:
     def test_add_match_note(self, db, sample_match, sample_match_note):
@@ -216,8 +239,8 @@ class TestFlowMatchOperations:
         flow_id = new_flow(db, sample_flow)
         match_id = save_match(db, sample_match)
         
-        sample_flow_match.flow_id = flow_id
-        sample_flow_match.match_id = match_id
+        sample_flow_match.flows_id = flow_id
+        sample_flow_match.matches_id = match_id
         
         flow_match_id = add_match_to_flow(db, sample_flow_match)
         
@@ -228,8 +251,8 @@ class TestFlowMatchOperations:
         saved_flow_match_row = db.execute("SELECT * FROM flow_matches WHERE id = ?", [flow_match_id]).fetchone()
         saved_flow_match = FlowMatch(*saved_flow_match_row)
         assert saved_flow_match is not None
-        assert saved_flow_match.flow_id == flow_id
-        assert saved_flow_match.match_id == match_id
+        assert saved_flow_match.flows_id == flow_id
+        assert saved_flow_match.matches_id == match_id
         assert saved_flow_match.order_index == sample_flow_match.order_index
 
     def test_archive_flow_match(self, db, sample_flow, sample_match, sample_flow_match):

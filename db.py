@@ -43,8 +43,8 @@ class Match:
 @dataclass
 class FlowMatch:
     id: Optional[int] = None
-    flow_id: int = 0
-    match_id: int = 0
+    flows_id: int = 0
+    matches_id: int = 0
     order_index: int = 0
     created_at: Optional[str] = None
     updated_at: Optional[str] = None

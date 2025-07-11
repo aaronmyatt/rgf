@@ -53,11 +53,11 @@ def test_flowmatch_crud(db):
     flow_id = insert_row(db, "flows", Flow(name="F"))
     match_id = insert_row(db, "matches", Match(line="bar", file_path="/tmp/bar.py", file_name="bar.py"))
 
-    flow_match = FlowMatch(flow_id=flow_id, match_id=match_id, order_index=1)
+    flow_match = FlowMatch(flows_id=flow_id, matches_id=match_id, order_index=1)
     fm_id = insert_row(db, "flow_matches", flow_match)
     fetched = get_row(db, "flow_matches", fm_id, FlowMatch)
-    assert fetched.flow_id == flow_id
-    assert fetched.match_id == match_id
+    assert fetched.flows_id == flow_id
+    assert fetched.matches_id == match_id
 
     # Archive
     archive_row(db, "flow_matches", fm_id)

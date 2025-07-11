@@ -28,14 +28,14 @@ CREATE TABLE IF NOT EXISTS matches (
 -- Table: flow_matches
 CREATE TABLE IF NOT EXISTS flow_matches (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    flow_id INTEGER NOT NULL,
-    match_id INTEGER NOT NULL,
-    order_index INTEGER NOT NULL, -- tracks order within the flow
+    flows_id INTEGER NOT NULL,
+    matches_id INTEGER NOT NULL,
+    order_index INTEGER DEFAULT 0, -- tracks order within the flow
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     archived BOOLEAN DEFAULT FALSE, -- indicates if the flow is archived
-    FOREIGN KEY (flow_id) REFERENCES flows(id),
-    FOREIGN KEY (match_id) REFERENCES matches(id)
+    FOREIGN KEY (flows_id) REFERENCES flows(id),
+    FOREIGN KEY (matches_id) REFERENCES matches(id)
 );
 
 -- Table: match_notes

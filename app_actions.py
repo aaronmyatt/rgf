@@ -1,4 +1,6 @@
+from datetime import datetime
 from typing import Optional
+from dataclasses import asdict
 from db import (
     Flow, Match, FlowMatch, MatchNote, FlowHistory, FlowHistoryResult,
     insert_row, get_row, update_row, archive_row, list_rows
@@ -8,6 +10,16 @@ def new_flow(db, flow: Flow) -> int:
     """Create a new flow and return its id."""
     return insert_row(db, "flows", flow)
 
+def get_latest_flow(db) -> Optional[Flow]:
+    """Get the most recent flow that is not archived."""
+    result = db.execute("""
+        SELECT * FROM flows
+        WHERE archived = FALSE
+        ORDER BY created_at DESC, id DESC
+        LIMIT 1
+    """).fetchone()
+    return Flow(*result) if result else None
+
 def rename_flow(db, flow: Flow, new_name: str):
     """Rename a flow."""
     flow.name = new_name
@@ -15,7 +27,22 @@ def rename_flow(db, flow: Flow, new_name: str):
 
 def save_match(db, match: Match) -> int:
     """Save a new match and return its id."""
-    return insert_row(db, "matches", match)
+    matches_table = db['matches']
+    flow_id = get_active_flow_id(db)
+    if flow_id:
+        matches_table.insert(asdict(match))
+        db['flow_matches'].insert({
+            'matches_id': matches_table.last_pk,
+            'flows_id': flow_id,
+            'order_index': 0  # Default order index, can be updated later
+        })
+        return matches_table.last_pk
+    else:
+        new_flow = Flow(name=f"New Flow {datetime.now()}", description=f"Auto-created flow for line: {match.line} - in: {match.file_name}")
+        matches_table.insert(asdict(match)).m2m('flows', asdict(new_flow), m2m_table='flow_matches', pk="id")
+        flow = get_latest_flow(db)
+        activate_flow(db, flow.id)
+        return matches_table.last_pk
 
 def add_match_note(db, match_note: MatchNote) -> int:
     """Add a note to a match and return its id."""
