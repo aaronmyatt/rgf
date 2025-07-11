@@ -136,6 +136,47 @@ class TestMatchOperations:
         assert archived_match.archived == 1
 
 
+def test_save_match_creates_flow_and_links_match_if_no_active_flow(db):
+    """
+    Fails: When saving a match and no flow is active, a new Flow should be created,
+    set as active, and the match should be linked to that flow via flow_matches (m2m).
+    """
+    from db import Match
+    from app_actions import save_match, get_active_flow_id
+
+    # Ensure there is no active flow
+    assert get_active_flow_id(db) is None
+
+    # Prepare a match (minimal required fields)
+    match = Match(
+        line="test line",
+        file_path="/tmp/test.py",
+        file_name="test.py",
+        line_no=1,
+        grep_meta='{"line_number": 1, "file_path": "/tmp/test.py"}'
+    )
+
+    # Save the match (should create a new flow and link the match)
+    match_id = save_match(db, match)
+
+    # A new flow should now exist and be active
+    active_flow_id = get_active_flow_id(db)
+    assert active_flow_id is not None, "A new flow should be created and set active"
+
+    # The match should exist
+    saved_match_row = db.execute("SELECT * FROM matches WHERE id = ?", [match_id]).fetchone()
+    assert saved_match_row is not None, "Match should be saved"
+
+    # The match should be linked to the new flow via flow_matches (m2m)
+    flows = db.table("flows", pk="id")
+    matches = db.table("matches", pk="id")
+    linked_matches = list(flows.get(active_flow_id).m2m(matches))
+    match_ids = [m["id"] for m in linked_matches]
+    assert match_id in match_ids, "Match should be linked to the new flow via m2m"
+
+    # This test is expected to fail until the feature is implemented
+    assert False, "This test is expected to fail until the feature is implemented"
+
 class TestMatchNoteOperations:
     def test_add_match_note(self, db, sample_match, sample_match_note):
         """Test adding a note to a match."""
