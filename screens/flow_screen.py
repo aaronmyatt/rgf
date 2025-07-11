@@ -1,12 +1,11 @@
-from textual.binding import Binding
 from textual.app import ComposeResult
-from textual.widgets import Static, Footer, ListView, ListItem, Label, Input
+from textual.widgets import Static, Footer, ListView, ListItem, Label
 from textual import events
 from .base_screen import BaseScreen
 
 
-class BlankScreen2(BaseScreen):
-    id = "blank2"
+class FlowScreen(BaseScreen):
+    id = "flows"
     BINDINGS = BaseScreen.COMMON_BINDINGS + []
     
     def compose(self) -> ComposeResult:

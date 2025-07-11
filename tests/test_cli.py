@@ -37,11 +37,11 @@ async def test_screen_navigation(db):
         
         # Navigate to screen 2
         await pilot.press("2")
-        assert app.screen.id == "blank2"
+        assert app.screen.id == "flows"
         
         # Navigate to screen 3
         await pilot.press("3")
-        assert app.screen.id == "blank3"
+        assert app.screen.id == "steps"
         
         # Navigate back to search screen
         await pilot.press("1")
@@ -58,8 +58,8 @@ async def test_screens_are_installed(db):
         await pilot.press("2")
         await pilot.press("3")
         assert "search" in [screen.id for screen in app.screen_stack]
-        assert "blank2" in [screen.id for screen in app.screen_stack]
-        assert "blank3" in [screen.id for screen in app.screen_stack]
+        assert "flows" in [screen.id for screen in app.screen_stack]
+        assert "steps" in [screen.id for screen in app.screen_stack]
 
 
 async def test_unfocus_all_action(db):
@@ -74,11 +74,11 @@ async def test_unfocus_all_action(db):
         # Test on other screens
         await pilot.press("2")
         await pilot.press("escape")
-        assert app.screen.id == "blank2"
+        assert app.screen.id == "flows"
         
         await pilot.press("3")
         await pilot.press("escape")
-        assert app.screen.id == "blank3"
+        assert app.screen.id == "steps"
 
 async def test_save_match_notification(db):
     """Test that saving a match shows a notification."""

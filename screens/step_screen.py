@@ -5,8 +5,8 @@ from textual import events
 from .base_screen import BaseScreen
 
 
-class BlankScreen3(BaseScreen):
-    id = "blank3"
+class StepScreen(BaseScreen):
+    id = "steps"
     BINDINGS = BaseScreen.COMMON_BINDINGS + []
     
     def compose(self) -> ComposeResult:

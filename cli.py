@@ -5,7 +5,7 @@ import sqlite_utils
 from waystation import UserGrep
 
 # Import screens from the screens package
-from screens import SearchScreen, BlankScreen2, BlankScreen3
+from screens import SearchScreen, FlowScreen, StepScreen
 
 class RGApp(App):
     CSS_PATH = 'styles.tcss'
@@ -17,8 +17,8 @@ class RGApp(App):
 
     def on_mount(self):
         self.install_screen(screen=SearchScreen, name='search')
-        self.install_screen(screen=BlankScreen2, name='blank2')
-        self.install_screen(screen=BlankScreen3, name='blank3')
+        self.install_screen(screen=FlowScreen, name='flows')
+        self.install_screen(screen=StepScreen, name='steps')
         self.push_screen('search')  # Start on the search screen
 
 

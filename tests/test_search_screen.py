@@ -4,7 +4,6 @@ import tempfile
 from db import get_db
 from cli import RGApp
 from waystation import UserGrep, Match
-from textual.widgets import Input, DataTable
 
 @pytest.fixture
 def db():
