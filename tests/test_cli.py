@@ -86,8 +86,6 @@ async def test_save_match_notification(db):
     from db import Match
     from waystation import UserGrep
 
-
-
     app = RGApp(db, UserGrep("test_some_async_operation", ["test_data/"]))
     async with app.run_test() as pilot:
         app.screen.dg.focus()
@@ -115,3 +113,13 @@ async def test_save_match_error_notification(db):
             args, kwargs = mock_notify.call_args
             assert "No matches available" in args[0]
             assert kwargs.get("severity") == "warning"
+
+async def test_save_match_causes_saved_row_to_be_highlighted(db):
+    """Test error notification when no match is selected."""
+    user_grep = UserGrep("test_some_async_operation", ["test_data/"])
+    app = RGApp(db, user_grep)
+    async with app.run_test() as pilot:
+        app.screen.dg.focus()
+        app.screen.action_save_match()
+        row = app.screen.dg.ordered_rows[0]
+        assert app.screen.dg.get_row(row.key)[0].spans[0].style.bgcolor.name == "green"

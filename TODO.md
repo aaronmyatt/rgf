@@ -6,8 +6,8 @@
 [x] mark/save match
     [x] save to db
     [x] keybinding (s)
-    [] show notification on save
-    [] highlight saved rows
+    [x] show notification on save
+    [x] highlight saved rows
         [] maybe a count somewhere?
     [] create flow if it doesn't exist
     [] add match to flow

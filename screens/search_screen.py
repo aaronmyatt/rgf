@@ -5,8 +5,8 @@ from textual.app import ComposeResult
 from textual.widgets import DataTable, Static, Input, Footer
 from textual.containers import Horizontal, Vertical, Container
 from textual import events
-from textual.content import Content
-from textual.screen import Screen
+from rich.text import Text
+from rich.style import Style
 from .base_screen import BaseScreen
 
 # Import shared logic from waystation.py
@@ -56,6 +56,9 @@ class SearchScreen(BaseScreen):
 .h-auto {
     height: auto;
 }
+.bg-green {
+    background: #48bb78;
+}
 '''
 
     id = "search"
@@ -97,7 +100,7 @@ class SearchScreen(BaseScreen):
 
         if self.matches:
             for idx, match in enumerate(self.matches):
-                self.dg.add_row(match.file_name, str(match.line_no), Content(match.line), key=idx)
+                self.dg.add_row(Text(match.file_name), Text(str(match.line_no)), Text(match.line), key=idx)
             self.dg.focus()
             self.dg.cursor_coordinate = 0, 0
             self.update_preview(0)
@@ -166,6 +169,11 @@ class SearchScreen(BaseScreen):
         idx = self.dg.cursor_coordinate.row      
         save_match(self.app.db, self.matches[idx])
         self.notify(f"Match saved: {self.matches[idx].file_name} at line {self.matches[idx].line_no}")
+
+        row = self.dg.ordered_rows[idx]
+        # Highlight the saved row
+        for cell in self.dg.get_row(row.key):
+            cell.stylize(Style(bgcolor="green", color="black"))
 
     def action_new_search(self):
         """Focus on the pattern input and clear it for a new search."""
