@@ -1,4 +1,5 @@
 import pytest
+from unittest.mock import patch
 import os
 import tempfile
 from db import get_db
@@ -78,3 +79,39 @@ async def test_unfocus_all_action(db):
         await pilot.press("3")
         await pilot.press("escape")
         assert app.screen.id == "blank3"
+
+async def test_save_match_notification(db):
+    """Test that saving a match shows a notification."""
+    from app_actions import save_match
+    from db import Match
+    from waystation import UserGrep
+
+
+
+    app = RGApp(db, UserGrep("test_some_async_operation", ["test_data/"]))
+    async with app.run_test() as pilot:
+        app.screen.dg.focus()
+
+        with patch.object(app, 'notify') as mock_notify:
+            # Trigger save action
+            app.screen.action_save_match()
+
+            # Verify notification
+            mock_notify.assert_called_once()
+            args, kwargs = mock_notify.call_args
+            assert "Match saved" in args[0]
+            assert kwargs.get("severity") == "information"
+
+async def test_save_match_error_notification(db):
+    """Test error notification when no match is selected."""
+    app = RGApp(db)
+    async with app.run_test() as pilot:
+        app.screen.dg.focus()
+
+        with patch.object(app, 'notify') as mock_notify:
+            app.screen.action_save_match()
+
+            mock_notify.assert_called_once()
+            args, kwargs = mock_notify.call_args
+            assert "No matches available" in args[0]
+            assert kwargs.get("severity") == "warning"

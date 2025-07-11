@@ -161,9 +161,11 @@ class SearchScreen(BaseScreen):
     def action_save_match(self):
         """Save the currently selected match to the database."""
         if not self.matches:
+            self.notify("No matches available.", severity="warning")
             return
         idx = self.dg.cursor_coordinate.row      
         save_match(self.app.db, self.matches[idx])
+        self.notify(f"Match saved: {self.matches[idx].file_name} at line {self.matches[idx].line_no}")
 
     def action_new_search(self):
         """Focus on the pattern input and clear it for a new search."""
