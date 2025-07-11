@@ -30,19 +30,14 @@ def save_match(db, match: Match) -> int:
     matches_table = db['matches']
     flow_id = get_active_flow_id(db)
     if flow_id:
-        matches_table.insert(asdict(match))
-        db['flow_matches'].insert({
-            'matches_id': matches_table.last_pk,
-            'flows_id': flow_id,
-            'order_index': 0  # Default order index, can be updated later
-        })
-        return matches_table.last_pk
-    else:
-        new_flow = Flow(name=f"New Flow {datetime.now()}", description=f"Auto-created flow for line: {match.line} - in: {match.file_name}")
-        matches_table.insert(asdict(match)).m2m('flows', asdict(new_flow), m2m_table='flow_matches', pk="id")
-        flow = get_latest_flow(db)
-        activate_flow(db, flow.id)
-        return matches_table.last_pk
+        match_id = insert_row(db, "matches", match)
+        insert_row(db, "flow_matches", FlowMatch(flows_id=flow_id, matches_id=match_id, order_index=0))
+        return match_id
+    new_flow = Flow(name=f"New Flow {datetime.now()}", description=f"Auto-created flow for line: {match.line} - in: {match.file_name}")
+    matches_table.insert(asdict(match)).m2m('flows', asdict(new_flow), m2m_table='flow_matches', pk="id")
+    flow = get_latest_flow(db)
+    activate_flow(db, flow.id)
+    return matches_table.last_pk
 
 def add_match_note(db, match_note: MatchNote) -> int:
     """Add a note to a match and return its id."""
