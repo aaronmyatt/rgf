@@ -13,6 +13,7 @@
     [x] create flow if it doesn't exist
     [x] add match to flow
     [] grep pattern history?
+BUG: up arrow with no data in datatable throws error
     <!-- [] use `/` to search for patterns in the current flow
     [] use `?` to search for patterns in all flows
     [] use `!` to search for patterns in all matches
@@ -25,10 +26,10 @@
         [] exact match
     [] vim like nav h,j
     
-[] flows screen
-    [] rename screen!
-[] list flows from db
-    [] just show a datatable for now
+[x] flows screen
+    [x] rename screen!
+[x] list flows from db
+    [x] just show a datatable for now
 [] CRUD flows
     [] bindings?
 [] command pallete to find flows

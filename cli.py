@@ -1,5 +1,6 @@
 from textual.app import App
 import sqlite_utils
+from datetime import datetime, timezone, timedelta
 
 # Import shared logic from waystation.py
 from waystation import UserGrep
@@ -14,6 +15,7 @@ class RGApp(App):
         super().__init__()
         self.db = db
         self.user_grep = user_grep
+        self.session_start = datetime.now(timezone.utc) - timedelta(seconds=1)
 
     def on_mount(self):
         self.install_screen(screen=SearchScreen, name='search')

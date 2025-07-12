@@ -27,12 +27,12 @@ def rename_flow(db, flow: Flow, new_name: str):
 
 def save_match(db, match: Match, flow_id: int =None) -> int:
     """Save a new match and return its id."""
-    matches_table = db['matches']
     if flow_id:
         match_id = insert_row(db, "matches", match)
         insert_row(db, "flow_matches", FlowMatch(flows_id=flow_id, matches_id=match_id, order_index=0))
         return match_id
     
+    matches_table = db['matches']
     new_flow = Flow(name=f"New Flow {datetime.now()}", description=f"Auto-created flow for line: {match.line} - in: {match.file_name}")
     matches_table.insert(prepare_row(match)).m2m('flows', prepare_row(new_flow), m2m_table='flow_matches', pk="id")
     return matches_table.last_pk

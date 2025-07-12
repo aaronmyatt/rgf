@@ -11,7 +11,7 @@ from .base_screen import BaseScreen
 
 # Import shared logic from waystation.py
 from waystation import Match, UserGrep, get_rg_matches, get_grep_ast_preview
-from app_actions import activate_flow, get_latest_flow, save_match
+from app_actions import activate_flow, get_active_flow_id, get_latest_flow, save_match
 
 class UserGrepInput(Container):
     """
@@ -64,11 +64,12 @@ class SearchScreen(BaseScreen):
     id = "search"
     title = "Ripgrep > grep-ast Browser"
     BINDINGS = BaseScreen.COMMON_BINDINGS + [
-        Binding(key="up", action="cursor_up", description="Cursor Up", show=True),
-        Binding(key="down", action="cursor_down", description="Cursor Down", show=True),
-        Binding(key="enter", action="open_in_editor", description="Open in editor", show=True),
         Binding(key="n", action="new_search", description="New Search", show=True),
         Binding(key="s", action="save_match", description="Save Match", show=True),
+        Binding(key="enter", action="open_in_editor", description="Open in editor", show=True),
+        Binding(key="escape", action="unfocus_all", description="Unfocus", show=True),
+        Binding(key="up", action="cursor_up", description="Cursor Up", show=False),
+        Binding(key="down", action="cursor_down", description="Cursor Down", show=False),
     ]
 
     def __init__(self, user_grep: UserGrep = None):
@@ -148,6 +149,11 @@ class SearchScreen(BaseScreen):
             self.action_cursor_up()
         elif event.key == "down":
             self.action_cursor_down()
+        elif event.key == "escape":
+            self.action_unfocus_all()
+    
+    def action_unfocus_all(self):
+        self.set_focus(None)
 
     def on_data_table_row_selected(self, event):
         self.update_preview(event.row_key.value)
@@ -166,10 +172,16 @@ class SearchScreen(BaseScreen):
         if not self.matches:
             self.notify("No matches available.", severity="warning")
             return
-        idx = self.dg.cursor_coordinate.row      
-        save_match(self.app.db, self.matches[idx])
-        flow = get_latest_flow(self.app.db)
-        activate_flow(self.app.db, flow.id)
+
+        idx = self.dg.cursor_coordinate.row
+        flow_id = get_active_flow_id(self.app.db, session_start=self.app.session_start)     
+        save_match(self.app.db, self.matches[idx], flow_id=flow_id)
+        if flow_id:
+            """do nothing"""
+        else:
+
+            flow = get_latest_flow(self.app.db)
+            activate_flow(self.app.db, flow.id)
         self.notify(f"Match saved: {self.matches[idx].file_name} at line {self.matches[idx].line_no}")
 
         row = self.dg.ordered_rows[idx]
