@@ -3,7 +3,7 @@ from typing import Optional
 from dataclasses import asdict
 from db import (
     Flow, Match, FlowMatch, MatchNote, FlowHistory, FlowHistoryResult,
-    insert_row, get_row, update_row, archive_row, list_rows
+    insert_row, get_row, update_row, archive_row, prepare_row
 )
 
 def new_flow(db, flow: Flow) -> int:
@@ -34,7 +34,7 @@ def save_match(db, match: Match) -> int:
         insert_row(db, "flow_matches", FlowMatch(flows_id=flow_id, matches_id=match_id, order_index=0))
         return match_id
     new_flow = Flow(name=f"New Flow {datetime.now()}", description=f"Auto-created flow for line: {match.line} - in: {match.file_name}")
-    matches_table.insert(asdict(match)).m2m('flows', asdict(new_flow), m2m_table='flow_matches', pk="id")
+    matches_table.insert(prepare_row(match)).m2m('flows', prepare_row(new_flow), m2m_table='flow_matches', pk="id")
     flow = get_latest_flow(db)
     activate_flow(db, flow.id)
     return matches_table.last_pk
@@ -68,21 +68,23 @@ def activate_flow(db, flow_id: int) -> int:
     flow_history = FlowHistory(flow_id=flow_id)
     return insert_row(db, "flow_history", flow_history)
 
-def get_active_flow_id(db) -> Optional[int]:
+def get_active_flow_id(db, session_start: datetime = None) -> Optional[int]:
     """Get the currently active flow id (most recent in flow_history).
     Returns None if the most recent flow is archived or if there's no history."""
-    result = db.execute("""
+
+    result = list(db.query(f"""
         SELECT fh.flow_id, f.archived
         FROM flow_history fh
         LEFT JOIN flows f ON fh.flow_id = f.id
+        WHERE fh.created_at >= :session_start
         ORDER BY fh.created_at DESC, fh.id DESC
         LIMIT 1
-    """).fetchone()
-    return result[0] if result and result[1] is 0 else None
+    """, {"session_start": session_start}))  
+    return result[0].get("flow_id") if result and not result[0].get("archived") else None
 
-def get_active_flow(db) -> Optional[Flow]:
+def get_active_flow(db, session_start: datetime = None) -> Optional[Flow]:
     """Get the currently active flow object."""
-    flow_id = get_active_flow_id(db)
+    flow_id = get_active_flow_id(db, session_start=session_start)
     if flow_id:
         return get_row(db, "flows", flow_id, Flow)
     return None

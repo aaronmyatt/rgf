@@ -31,7 +31,7 @@ class FlowScreen(BaseScreen):
         """Load all non-archived flows from database."""
         try:
             # Get all non-archived flows
-            self.flows = list_rows(self.app.db, "flows", Flow, where={"archived": False})
+            self.flows = list_rows(self.app.db, "flows", Flow, where="archived = ?", where_args=[False])
             
             # Update the ListView
             flows_list = self.query_one("#flows_list", ListView)
@@ -55,8 +55,8 @@ class FlowScreen(BaseScreen):
 
     def on_list_view_selected(self, event):
         """Handle flow selection."""
-        if self.flows and 0 <= event.item.index < len(self.flows):
-            self.selected_flow = self.flows[event.item.index]
+        listview = self.query_one("#flows_list", ListView)
+        self.selected_flow = self.flows[listview.index]
 
     def action_refresh_flows(self):
         """Refresh the flows list."""

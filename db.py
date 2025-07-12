@@ -74,6 +74,11 @@ class FlowHistoryResult(FlowHistory):
 
 # --- Utility functions ---
 
+def prepare_row(row: T) -> dict:
+    """Prepare a dataclass row for insertion by converting to dict and removing None values."""
+    data = asdict(row)
+    return {k: v for k, v in data.items() if v is not None and k != "id"}
+
 def insert_row(db, table: str, row: T) -> int:
     """Insert a dataclass row into the table. Returns the inserted row id."""
     data = asdict(row)
@@ -100,9 +105,9 @@ def archive_row(db, table: str, row_id: int):
     """Set archived=True for a row by id."""
     db[table].update(row_id, {"archived": True})
 
-def list_rows(db, table: str, cls: Type[T], where: dict = None) -> List[T]:
+def list_rows(db, table: str, cls: Type[T], where: str = None, where_args = None) -> List[T]:
     """List rows as dataclass instances, optionally filtered by where dict."""
-    rows = db[table].rows if where is None else db[table].rows_where(where)
+    rows = db[table].rows if where is None else db[table].rows_where(where, where_args)
     return [cls(**row) for row in rows]
 
 # Example usage:
