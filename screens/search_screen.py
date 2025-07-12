@@ -11,7 +11,7 @@ from .base_screen import BaseScreen
 
 # Import shared logic from waystation.py
 from waystation import Match, UserGrep, get_rg_matches, get_grep_ast_preview
-from app_actions import save_match
+from app_actions import activate_flow, get_latest_flow, save_match
 
 class UserGrepInput(Container):
     """
@@ -168,6 +168,8 @@ class SearchScreen(BaseScreen):
             return
         idx = self.dg.cursor_coordinate.row      
         save_match(self.app.db, self.matches[idx])
+        flow = get_latest_flow(self.app.db)
+        activate_flow(self.app.db, flow.id)
         self.notify(f"Match saved: {self.matches[idx].file_name} at line {self.matches[idx].line_no}")
 
         row = self.dg.ordered_rows[idx]

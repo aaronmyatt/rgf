@@ -12,31 +12,29 @@ def new_flow(db, flow: Flow) -> int:
 
 def get_latest_flow(db) -> Optional[Flow]:
     """Get the most recent flow that is not archived."""
-    result = db.execute("""
+    result = list(db.query("""
         SELECT * FROM flows
         WHERE archived = FALSE
         ORDER BY created_at DESC, id DESC
         LIMIT 1
-    """).fetchone()
-    return Flow(*result) if result else None
+    """))
+    return Flow(**result[0]) if result else None
 
 def rename_flow(db, flow: Flow, new_name: str):
     """Rename a flow."""
     flow.name = new_name
     update_row(db, "flows", flow.id, flow)
 
-def save_match(db, match: Match) -> int:
+def save_match(db, match: Match, flow_id: int =None) -> int:
     """Save a new match and return its id."""
     matches_table = db['matches']
-    flow_id = get_active_flow_id(db)
     if flow_id:
         match_id = insert_row(db, "matches", match)
         insert_row(db, "flow_matches", FlowMatch(flows_id=flow_id, matches_id=match_id, order_index=0))
         return match_id
+    
     new_flow = Flow(name=f"New Flow {datetime.now()}", description=f"Auto-created flow for line: {match.line} - in: {match.file_name}")
     matches_table.insert(prepare_row(match)).m2m('flows', prepare_row(new_flow), m2m_table='flow_matches', pk="id")
-    flow = get_latest_flow(db)
-    activate_flow(db, flow.id)
     return matches_table.last_pk
 
 def add_match_note(db, match_note: MatchNote) -> int:

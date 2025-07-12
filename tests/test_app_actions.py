@@ -4,7 +4,7 @@ import os
 from datetime import datetime, timedelta, timezone
 from db import get_db, Flow, Match, FlowMatch, MatchNote, FlowHistory
 from app_actions import (
-    new_flow, rename_flow, save_match, add_match_note, add_match_to_flow,
+    get_latest_flow, new_flow, rename_flow, save_match, add_match_note, add_match_to_flow,
     archive_flow, archive_match, archive_flow_match, archive_match_note,
     activate_flow, get_active_flow_id, get_active_flow, get_flow_history
 )
@@ -153,7 +153,7 @@ def test_save_match_and_links_to_active_flow(db, sample_flow):
     )
 
     # Save the match (should create a new flow and link the match)
-    match_id = save_match(db, match)
+    match_id = save_match(db, match, flow_id=active_flow_id)
 
     # The match should exist
     saved_match_row = db.execute("SELECT * FROM matches WHERE id = ?", [match_id]).fetchone()
@@ -188,7 +188,7 @@ def test_save_match_creates_flow_and_links_match_if_no_active_flow(db):
     match_id = save_match(db, match)
 
     # A new flow should now exist and be active
-    active_flow = get_active_flow(db, session_start=datetime.now(timezone.utc) - timedelta(minutes=1))
+    active_flow = get_latest_flow(db)
     assert active_flow.id is not None, "A new flow should be created and set active"
     assert active_flow.created_at is not None, "Active flow should have a creation timestamp"
     assert active_flow.updated_at is not None, "Active flow should have an update timestamp"
@@ -298,24 +298,6 @@ class TestFlowActivation:
 
 
 class TestSessionBasedFlowActivation:
-    # def test_activate_flow_with_session_start_time(self, db, sample_flow):
-    #     """Test activating a flow with a session start time."""
-    #     from datetime import datetime, timedelta
-        
-    #     flow_id = new_flow(db, sample_flow)
-    #     session_start = datetime.now() - timedelta(minutes=1)
-        
-    #     history_id = activate_flow(db, flow_id, session_start=session_start)
-        
-    #     assert isinstance(history_id, int)
-    #     assert history_id > 0
-        
-    #     # Verify the flow history was created
-    #     history_entry_row = db.execute("SELECT * FROM flow_history WHERE id = ?", [history_id]).fetchone()
-    #     history_entry = FlowHistory(*history_entry_row)
-    #     assert history_entry is not None
-    #     assert history_entry.flow_id == flow_id
-
     def test_get_active_flow_id_with_session_start_time(self, db, sample_flow):
         """Test getting active flow ID filtered by session start time."""
         flow_id = new_flow(db, sample_flow)
@@ -338,123 +320,70 @@ class TestSessionBasedFlowActivation:
         active_flow_id = get_active_flow_id(db, session_start=session_start)
         assert active_flow_id == flow_id
 
-    # def test_get_active_flow_id_ignores_pre_session_activations(self, db):
-    #     """Test that get_active_flow_id ignores activations before session start."""
-    #     from datetime import datetime, timedelta
-    #     
-    #     # Create two flows
-    #     flow1 = Flow(name="Flow 1", description="First flow")
-    #     flow2 = Flow(name="Flow 2", description="Second flow")
-    #     
-    #     flow1_id = new_flow(db, flow1)
-    #     flow2_id = new_flow(db, flow2)
-    #     
-    #     # Activate both flows before session start (simulate old activations)
-    #     activate_flow(db, flow1_id)
-    #     activate_flow(db, flow2_id)
-    #     
-    #     # Set session start time to future (all existing activations are before this)
-    #     session_start = datetime.now() + timedelta(minutes=1)
-    #     
-    #     # Should return None since no flows activated after session start
-    #     active_flow_id = get_active_flow_id(db, session_start=session_start)
-    #     assert active_flow_id is None
-    #     
-    #     # Activate flow1 after session start
-    #     activate_flow(db, flow1_id, session_start=session_start)
-    #     
-    #     # Should return flow1_id
-    #     active_flow_id = get_active_flow_id(db, session_start=session_start)
-    #     assert active_flow_id == flow1_id
+    def test_get_active_flow_id_ignores_pre_session_activations(self, db):
+        """Test that get_active_flow_id ignores activations before session start."""
+        from datetime import datetime, timedelta
+        
+        # Create two flows
+        flow1 = Flow(name="Flow 1", description="First flow")
+        flow2 = Flow(name="Flow 2", description="Second flow")
+        
+        flow1_id = new_flow(db, flow1)
+        flow2_id = new_flow(db, flow2)
+        
+        # Activate both flows before session start (simulate old activations)
+        activate_flow(db, flow1_id)
+        activate_flow(db, flow2_id)
+        
+        # Set session start time to future (all existing activations are before this)
+        session_start = datetime.now(timezone.utc) + timedelta(minutes=1)
+        
+        # Should return None since no flows activated after session start
+        active_flow_id = get_active_flow_id(db, session_start=session_start)
+        assert active_flow_id is None
+        
+        # Activate flow1 after session start
+        activate_flow(db, flow1_id)
+        
+        # Should return flow1_id
+        session_start = datetime.now(timezone.utc) - timedelta(minutes=1)
+        active_flow_id = get_active_flow_id(db, session_start=session_start)
+        assert active_flow_id == flow1_id
 
-    # def test_get_active_flow_with_session_start_time(self, db, sample_flow):
-    #     """Test getting active flow object filtered by session start time."""
-    #     from datetime import datetime, timedelta
-    #     
-    #     flow_id = new_flow(db, sample_flow)
-    #     
-    #     # Activate flow before session start
-    #     activate_flow(db, flow_id)
-    #     
-    #     # Set session start time to future
-    #     session_start = datetime.now() + timedelta(minutes=1)
-    #     
-    #     # Should return None since no flows activated after session start
-    #     active_flow = get_active_flow(db, session_start=session_start)
-    #     assert active_flow is None
-    #     
-    #     # Activate flow after session start
-    #     activate_flow(db, flow_id, session_start=session_start)
-    #     
-    #     # Should now return the flow object
-    #     active_flow = get_active_flow(db, session_start=session_start)
-    #     assert active_flow is not None
-    #     assert active_flow.id == flow_id
-    #     assert active_flow.name == sample_flow.name
-
-    # def test_get_active_flow_id_returns_most_recent_after_session_start(self, db):
-    #     """Test that get_active_flow_id returns the most recent activation after session start."""
-    #     from datetime import datetime, timedelta
-    #     
-    #     # Create three flows
-    #     flow1 = Flow(name="Flow 1", description="First flow")
-    #     flow2 = Flow(name="Flow 2", description="Second flow")
-    #     flow3 = Flow(name="Flow 3", description="Third flow")
-    #     
-    #     flow1_id = new_flow(db, flow1)
-    #     flow2_id = new_flow(db, flow2)
-    #     flow3_id = new_flow(db, flow3)
-    #     
-    #     # Activate flows before session start
-    #     activate_flow(db, flow1_id)
-    #     activate_flow(db, flow2_id)
-    #     
-    #     # Set session start time to past (some activations will be after this)
-    #     session_start = datetime.now() - timedelta(minutes=5)
-    #     
-    #     # Activate flows after session start (these will have timestamps after session_start)
-    #     activate_flow(db, flow2_id, session_start=session_start)
-    #     activate_flow(db, flow3_id, session_start=session_start)
-    #     
-    #     # Should return flow3_id as it was activated most recently after session start
-    #     active_flow_id = get_active_flow_id(db, session_start=session_start)
-    #     assert active_flow_id == flow3_id
-
-    # def test_session_start_time_with_archived_flow(self, db, sample_flow):
-    #     """Test that archived flows are still excluded even with session start time."""
-    #     from datetime import datetime, timedelta
-    #     
-    #     flow_id = new_flow(db, sample_flow)
-    #     sample_flow.id = flow_id
-    #     
-    #     # Set session start time to past
-    #     session_start = datetime.now() - timedelta(minutes=1)
-    #     
-    #     # Activate flow after session start
-    #     activate_flow(db, flow_id, session_start=session_start)
-    #     
-    #     # Archive the flow
-    #     archive_flow(db, sample_flow)
-    #     
-    #     # Should return None since the flow is archived
-    #     active_flow_id = get_active_flow_id(db, session_start=session_start)
-    #     assert active_flow_id is None
-    #     
-    #     active_flow = get_active_flow(db, session_start=session_start)
-    #     assert active_flow is None
+    def test_session_start_time_with_archived_flow(self, db, sample_flow):
+        """Test that archived flows are still excluded even with session start time."""
+        from datetime import datetime, timedelta
+        
+        flow_id = new_flow(db, sample_flow)
+        sample_flow.id = flow_id
+        
+        # Set session start time to past
+        session_start = datetime.now() - timedelta(minutes=1)
+        
+        # Activate flow after session start
+        activate_flow(db, flow_id)
+        
+        # Archive the flow
+        archive_flow(db, sample_flow)
+        
+        # Should return None since the flow is archived
+        active_flow_id = get_active_flow_id(db, session_start=session_start)
+        assert active_flow_id is None
+        
+        active_flow = get_active_flow(db, session_start=session_start)
+        assert active_flow is None
 
     # def test_save_match_respects_session_start_time(self, db):
     #     """Test that save_match only links to flows activated after session start."""
     #     from datetime import datetime, timedelta
-    #     
+        
     #     # Create a flow and activate it before session start
     #     flow1 = Flow(name="Pre-session Flow", description="Before session")
     #     flow1_id = new_flow(db, flow1)
     #     activate_flow(db, flow1_id)
-    #     
+        
     #     # Set session start time to future (existing activation is before this)
-    #     session_start = datetime.now() + timedelta(minutes=1)
-    #     
+        
     #     # Prepare a match
     #     match = Match(
     #         line="test line",
@@ -463,39 +392,19 @@ class TestSessionBasedFlowActivation:
     #         line_no=1,
     #         grep_meta='{"line_number": 1, "file_path": "/tmp/test.py"}'
     #     )
-    #     
+        
     #     # Save the match - should create a new flow since no active flow after session start
-    #     match_id = save_match(db, match, session_start=session_start)
-    #     
+    #     match_id = save_match(db, match)
+        
     #     # Should have created a new flow and set it as active
-    #     active_flow = get_active_flow(db, session_start=session_start)
+    #     active_flow = get_active_flow(db)
     #     assert active_flow is not None
     #     assert active_flow.id != flow1_id  # Should be a different flow
-    #     
+        
     #     # The match should be linked to the new flow, not the pre-session flow
     #     linked_matches = db.query('SELECT * FROM flow_matches WHERE flows_id = ?', [active_flow.id])
     #     match_ids = [m["matches_id"] for m in linked_matches]
     #     assert match_id in match_ids
-
-    # def test_session_start_time_boundary_conditions(self, db):
-    #     """Test edge cases around session start time boundaries."""
-    #     from datetime import datetime, timedelta
-    #     
-    #     flow = Flow(name="Boundary Test Flow", description="Testing boundaries")
-    #     flow_id = new_flow(db, flow)
-    #     
-    #     # Test exact boundary - session start time equals activation time
-    #     session_start = datetime.now()
-    #     activate_flow(db, flow_id, session_start=session_start)
-    #     
-    #     # Should include activations at exactly the session start time
-    #     active_flow_id = get_active_flow_id(db, session_start=session_start)
-    #     assert active_flow_id == flow_id
-    #     
-    #     # Test with session start time slightly in the future
-    #     future_session_start = datetime.now() + timedelta(seconds=1)
-    #     active_flow_id = get_active_flow_id(db, session_start=future_session_start)
-    #     assert active_flow_id is None
 
     def test_get_active_flow_id_with_history(self, db, sample_flow):
         """Test getting the most recently activated flow ID."""

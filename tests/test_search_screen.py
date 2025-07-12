@@ -1,6 +1,8 @@
+from datetime import datetime, timedelta, timezone
 import pytest
 import os
 import tempfile
+from app_actions import get_active_flow_id
 from db import get_db
 from cli import RGApp
 from waystation import UserGrep, Match
@@ -227,6 +229,65 @@ async def test_save_match_to_database_binding(db):
         assert saved_match['line'] == current_match.line
         assert saved_match['file_name'] == current_match.file_name.split('/')[-1]
         assert saved_match['archived'] == 0  # Should be saved as active
+
+async def test_save_match_creates_and_links_to_new_flow(db):
+    """Test that pressing 's' saves the current match to the database."""
+    user_grep = UserGrep("def", ["test_data/"])
+    app = RGApp(db, user_grep)
+    
+    async with app.run_test() as pilot:
+        datatable = app.screen.query_one('#matches_table')
+        datatable.focus()
+              
+        initial_count = len(db.execute("SELECT * FROM matches").fetchall())
+        
+        await pilot.press("s")
+        
+        matches = list(db.table('matches').rows)
+        flow_matches = list(db.table('flow_matches').rows)
+        flows = list(db.table('flows').rows)
+        assert len(matches) == initial_count + 1
+        assert len(flow_matches) == 1
+        assert len(flows) == 1
+        assert flow_matches[0]['flows_id'] == flows[0]['id']
+        assert flow_matches[0]['matches_id'] == matches[-1]['id']
+
+async def test_save_match_activates_newly_created_flow(db):
+    """Test that pressing 's' saves the current match to the database."""
+    user_grep = UserGrep("def", ["test_data/"])
+    app = RGApp(db, user_grep)
+    
+    async with app.run_test() as pilot:
+        datatable = app.screen.query_one('#matches_table')
+        datatable.focus()
+        
+        await pilot.press("s")
+        flows = list(db.table('flows').rows)
+        flow_id = get_active_flow_id(db, session_start=datetime.now(timezone.utc) - timedelta(minutes=1))
+        assert flows[0]['id'] == flow_id, "The newly created flow should be active"
+
+async def test_save_match_relates_to_already_active_flow(db):
+    """Test that pressing 's' saves the current match to the database."""
+    user_grep = UserGrep("def", ["test_data/"])
+    app = RGApp(db, user_grep)
+    
+    async with app.run_test() as pilot:
+        datatable = app.screen.query_one('#matches_table')
+        datatable.focus()
+        
+        await pilot.press("s")
+        flows = list(db.table('flows').rows)
+        flow_id = get_active_flow_id(db, session_start=datetime.now(timezone.utc) - timedelta(minutes=1))
+        assert flows[0]['id'] == flow_id, "The newly created flow should be active"
+        await pilot.press("down")
+        await pilot.press("s")
+        get_flows_and_matches = db.execute("""
+            SELECT f.id, m.id FROM flows f
+            JOIN flow_matches fm ON f.id = fm.flows_id
+            JOIN matches m ON fm.matches_id = m.id
+            WHERE f.id = ?
+        """, (flow_id,)).fetchall()
+        assert len(get_flows_and_matches) == 2, "The match should be added to the already active flow"
 
 async def test_open_in_editor_action(db):
     """Test the open in editor action (mocked)."""
