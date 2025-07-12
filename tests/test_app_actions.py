@@ -188,15 +188,17 @@ def test_save_match_creates_flow_and_links_match_if_no_active_flow(db):
     match_id = save_match(db, match)
 
     # A new flow should now exist and be active
-    active_flow_id = get_active_flow_id(db)
-    assert active_flow_id is not None, "A new flow should be created and set active"
+    active_flow = get_active_flow(db)
+    assert active_flow.id is not None, "A new flow should be created and set active"
+    assert active_flow.created_at is not None, "Active flow should have a creation timestamp"
+    assert active_flow.updated_at is not None, "Active flow should have an update timestamp"
 
     # The match should exist
     saved_match_row = db.execute("SELECT * FROM matches WHERE id = ?", [match_id]).fetchone()
     assert saved_match_row is not None, "Match should be saved"
 
     # The match should be linked to the new flow via flow_matches (m2m)
-    linked_matches = db.query('SELECT * FROM flow_matches WHERE id = :flows_id;', {"flows_id": active_flow_id})
+    linked_matches = db.query('SELECT * FROM flow_matches WHERE id = :flows_id;', {"flows_id": active_flow.id})
     match_ids = [m["id"] for m in linked_matches]
     assert match_id in match_ids, "Match should be linked to the new flow via m2m"
 
