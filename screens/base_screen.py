@@ -1,7 +1,36 @@
 from textual.binding import Binding
-from textual.widgets import Input
+from textual.widgets import Input, Static
 from textual import events
 from textual.screen import Screen
+from textual.message import Message
+
+
+class ActiveFlowChanged(Message):
+    """Posted when active flow changes"""
+    def __init__(self, flow_name: str):
+        self.flow_name = flow_name
+        super().__init__()
+
+
+class FlowHeader(Static):
+    """Header displaying the active flow name"""
+    DEFAULT_CSS = '''
+    FlowHeader {
+        background: dodgerblue;
+        color: white;
+        text-align: center;
+        width: 100%;
+        padding: 1;
+    }
+    '''
+    
+    def __init__(self):
+        super().__init__("No active flow")
+        self.styles.width = "100%"
+        self.styles.text_align = "center"
+        self.styles.background = "dodgerblue"
+        self.styles.color = "white"
+        self.styles.padding = (0, 1)
 
 
 class BaseScreen(Screen):
@@ -33,3 +62,8 @@ class BaseScreen(Screen):
 
     def action_goto_screen_3(self):
         self.app.push_screen('steps')
+        
+    def on_active_flow_changed(self, event: ActiveFlowChanged):
+        """Update header text when active flow changes"""
+        header = self.query_one(FlowHeader)
+        header.update(event.flow_name)

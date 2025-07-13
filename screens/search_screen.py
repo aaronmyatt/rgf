@@ -81,6 +81,7 @@ class SearchScreen(BaseScreen):
         self.preview = None
 
     def compose(self) -> ComposeResult:
+        yield FlowHeader()
         self.dg = DataTable(zebra_stripes=True, id="matches_table")
         self.dg.cursor_type = "row"
         self.dg.add_columns("File", "Line", "Text")
@@ -186,9 +187,14 @@ class SearchScreen(BaseScreen):
         if flow_id:
             """do nothing"""
         else:
-
             flow = get_latest_flow(self.app.db)
             activate_flow(self.app.db, flow.id)
+            
+        # Get updated active flow name
+        active_flow = get_active_flow(self.app.db, self.app.session_start)
+        flow_name = active_flow.name if active_flow else "No active flow"
+        self.post_message(ActiveFlowChanged(flow_name))
+        
         self.notify(f"Match saved: {self.matches[idx].file_name} at line {self.matches[idx].line_no}")
 
         row = self.dg.ordered_rows[idx]

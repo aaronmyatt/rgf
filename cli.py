@@ -1,6 +1,8 @@
 from textual.app import App
 import sqlite_utils
 from datetime import datetime, timezone, timedelta
+from db import get_active_flow
+from screens.base_screen import ActiveFlowChanged
 
 # Import shared logic from waystation.py
 from waystation import UserGrep
@@ -22,6 +24,24 @@ class RGApp(App):
         self.install_screen(screen=FlowScreen, name='flows')
         self.install_screen(screen=StepScreen, name='steps')
         self.push_screen('search')  # Start on the search screen
+        
+        # Initialize header with current flow
+        active_flow = get_active_flow(self.db, self.session_start)
+        flow_name = active_flow.name if active_flow else "No active flow"
+        self.post_message(ActiveFlowChanged(flow_name))
+
+    def on_active_flow_changed(self, event: ActiveFlowChanged):
+        """Update header text in all screens"""
+        for screen in self.screens.values():
+            if hasattr(screen, "query_one"):
+                header = screen.query_one(FlowHeader)
+                if header:
+                    header.update(event.flow_name)
+        
+        # Initialize header with current flow
+        active_flow = get_active_flow(self.db, self.session_start)
+        flow_name = active_flow.name if active_flow else "No active flow"
+        self.post_message(ActiveFlowChanged(flow_name))
 
 
 if __name__ == "__main__": # pragma: no cover

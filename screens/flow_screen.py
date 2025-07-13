@@ -27,6 +27,7 @@ class FlowScreen(BaseScreen):
         self.selected_flow = None
     
     def compose(self) -> ComposeResult:
+        yield FlowHeader()
         yield Static(Words.HEADER, classes="header")
         yield ListView(id="flows_list")
         yield Footer()
@@ -104,6 +105,7 @@ class FlowScreen(BaseScreen):
         if self.selected_flow:
             try:
                 activate_flow(self.app.db, self.selected_flow.id)
+                self.post_message(ActiveFlowChanged(self.selected_flow.name))
                 self.notify(f"Activated flow: {self.selected_flow.name}")
             except Exception as e:
                 self.notify(f"Error activating flow: {str(e)}", severity="error")
