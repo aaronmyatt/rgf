@@ -162,7 +162,7 @@ async def test_refresh_flows_action_reloads_flows(db, sample_flows):
         # Should now show the new flow
         assert len(app.screen.flows) == 1
         assert app.screen.flows[0].name == "Test Flow 1"
-        list_items = app.screen.query('.flow_list_items')
+        list_items = app.screen.query('.flow_list_item')
         list_view = app.screen.query_one('#flows_list')
         assert len(list_items) == 1
 
