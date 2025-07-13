@@ -3,14 +3,41 @@ from enum import StrEnum
 from textual.app import ComposeResult
 from textual.widgets import Static, Footer, ListView, ListItem, Label
 from textual import events
+from textual.containers import Container
+from textual.widgets import Input, TextArea, Button
 from .base_screen import BaseScreen, FlowHeader, ActiveFlowChanged
-from db import Flow, list_rows
+from db import Flow, list_rows, update_row
 from app_actions import activate_flow, get_flow_match_counts
 
 class Words(StrEnum):
     """Text constants for the FlowScreen."""
     HEADER = "Flows"
     NO_FLOWS_MESSAGE = "No flows found. Create one from the search screen."
+
+class FlowEditOverlay(Container):
+    """Overlay for editing flow details"""
+    
+    def __init__(self, flow: Flow):
+        super().__init__()
+        self.flow = flow
+        self.id = "flow_edit_overlay"
+        
+    def compose(self) -> ComposeResult:
+        yield Input(
+            id="flow_name_input",
+            value=self.flow.name,
+            placeholder="Flow Name"
+        )
+        yield TextArea(
+            id="flow_description_input",
+            text=self.flow.description or "",
+            classes="description-textarea"
+        )
+        yield Button("Save", id="save_flow_button", variant="primary")
+        yield Button("Cancel", id="cancel_flow_button")
+
+    def on_mount(self):
+        self.query_one("#flow_name_input").focus()
 
 def flow_dom_id(flow):
     return 'wat'+str(hash(f"{flow.id}{flow.name}"))
@@ -20,6 +47,7 @@ class FlowScreen(BaseScreen):
     BINDINGS = BaseScreen.COMMON_BINDINGS + [
         ("a", "activate_selected_flow", "Activate Flow"),
         ("r", "refresh_flows", "Refresh"),
+        ("e", "edit_flow", "Edit Flow"),  # New binding
     ]
     
     def __init__(self, **kwargs):
@@ -123,3 +151,47 @@ class FlowScreen(BaseScreen):
                 self.notify(f"Activated flow: {self.selected_flow.name}")
             except Exception as e:
                 self.notify(f"Error activating flow: {str(e)}", severity="error")
+
+    def action_edit_flow(self):
+        """Show edit overlay for selected flow"""
+        if self.selected_flow:
+            # Remove existing overlay if present
+            self.query_one("#flow_edit_overlay", remove=True, quiet=True)
+            
+            # Create and mount new overlay
+            overlay = FlowEditOverlay(self.selected_flow)
+            self.mount(overlay)
+            overlay.scroll_visible()
+
+    async def on_button_pressed(self, event: Button.Pressed):
+        """Handle button presses in the overlay"""
+        if event.button.id == "save_flow_button":
+            await self.save_flow_changes()
+        elif event.button.id == "cancel_flow_button":
+            self.query_one("#flow_edit_overlay", remove=True)
+
+    async def save_flow_changes(self):
+        """Save changes made in the edit overlay"""
+        overlay = self.query_one("#flow_edit_overlay")
+        name_input = overlay.query_one("#flow_name_input", Input)
+        desc_input = overlay.query_one("#flow_description_input", TextArea)
+        
+        new_name = name_input.value.strip()
+        new_desc = desc_input.text.strip()
+        
+        if not new_name:
+            self.notify("Flow name cannot be empty", severity="error")
+            return
+        
+        try:
+            # Update flow in database
+            self.selected_flow.name = new_name
+            self.selected_flow.description = new_desc or None
+            update_row(self.app.db, "flows", self.selected_flow.id, self.selected_flow)
+            
+            # Refresh UI and close overlay
+            self.notify(f"Updated flow: {new_name}")
+            overlay.remove()
+            await self.load_flows()
+        except Exception as e:
+            self.notify(f"Error saving flow: {str(e)}", severity="error")
