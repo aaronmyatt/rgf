@@ -124,12 +124,20 @@ class SearchScreen(BaseScreen):
 
     def action_cursor_up(self):
         cursor_coordinate = self.dg.cursor_coordinate
+        if(cursor_coordinate.row == 0 and cursor_coordinate.column == 0):
+            """do nothing, cursor is already at the top"""
+            return
+
         cell_key = self.dg.coordinate_to_cell_key(cursor_coordinate)
         row_key, _ = cell_key
         self.update_preview(row_key.value - 1)
 
     def action_cursor_down(self):
         cursor_coordinate = self.dg.cursor_coordinate
+        if(cursor_coordinate.row == 0 and cursor_coordinate.column == 0):
+            """do nothing, cursor is already at the top"""
+            return
+        
         cell_key = self.dg.coordinate_to_cell_key(cursor_coordinate)
         row_key, _ = cell_key
         self.update_preview(row_key.value + 1)

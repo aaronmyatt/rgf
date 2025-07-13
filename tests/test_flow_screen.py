@@ -1,7 +1,7 @@
 import pytest
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from textual.widgets import ListView, ListItem, Label
-from screens.flow_screen import FlowScreen
+from screens.flow_screen import FlowScreen, Words
 from db import Flow, get_db
 from app_actions import new_flow, activate_flow, get_active_flow_id
 from cli import RGApp
@@ -51,171 +51,75 @@ async def test_flow_screen_loads_flows_from_database(db, sample_flows):
     
     app = RGApp(db)
     async with app.run_test() as pilot:
-        screen = FlowScreen()
-        app.install_screen(screen, "test_flow_screen")
-        await app.push_screen("test_flow_screen")
+        await pilot.press("escape")
+        await pilot.press("2")  # Navigate to FlowScreen
         
         # Wait for flows to load
         await pilot.pause()
         
         # Check that flows were loaded
-        assert len(screen.flows) == 2
-        assert screen.flows[0].name == "Test Flow 1"
-        assert screen.flows[1].name == "Test Flow 2"
+        assert len(app.screen.flows) == 2
+        assert app.screen.flows[0].name == "Test Flow 1"
+        assert app.screen.flows[1].name == "Test Flow 2"
         
         # Check that ListView contains the flows
-        flows_list = screen.query_one("#flows_list", ListView)
+        flows_list = app.screen.query_one("#flows_list", ListView)
         assert len(flows_list.children) == 2
 
 
-# async def test_flow_screen_shows_no_flows_message_when_empty(db):
-#     """Test that appropriate message is shown when no flows exist."""
-#     app = RGApp(db)
-#     async with app.run_test() as pilot:
-#         screen = FlowScreen()
-#         app.install_screen(screen, "test_flow_screen")
-#         await app.push_screen("test_flow_screen")
+async def test_flow_screen_shows_no_flows_message_when_empty(db):
+    """Test that appropriate message is shown when no flows exist."""
+    app = RGApp(db)
+    async with app.run_test() as pilot:
+        await pilot.press("escape")
+        await pilot.press("2")  # Navigate to FlowScreen
         
-#         await pilot.pause()
+        await pilot.pause()
         
-#         # Check that no flows message is displayed
-#         flows_list = screen.query_one("#flows_list", ListView)
-#         assert len(flows_list.children) == 1
+        # Check that no flows message is displayed
+        flows_list = app.screen.query_one("#flows_list", ListView)
+        assert len(flows_list.children) == 1
         
-#         list_item = flows_list.children[0]
-#         label = list_item.children[0]
-#         assert "No flows found" in label.renderable
+        list_item = flows_list.children[0]
+        label = list_item.children[0]
+        assert Words.NO_FLOWS_MESSAGE in label.renderable
 
 
-# async def test_flow_screen_excludes_archived_flows(db, sample_flows):
-#     """Test that archived flows are not displayed."""
-#     # Create both archived and non-archived flows
-#     for flow in sample_flows:
-#         new_flow(db, flow)
+async def test_enter_key_activates_selected_flow(db, sample_flows):
+    """Test that pressing Enter activates the selected flow."""
+    # Create flow in database
+    flow_id = new_flow(db, sample_flows[0])
+    flow_id1 = new_flow(db, sample_flows[1])
     
-#     app = RGApp(db)
-#     async with app.run_test() as pilot:
-#         screen = FlowScreen()
-#         app.install_screen(screen, "test_flow_screen")
-#         await app.push_screen("test_flow_screen")
+    app = RGApp(db)
+    async with app.run_test() as pilot:
+        await pilot.press("escape")
+        await pilot.press("2")  # Navigate to FlowScreen
+        assert len(app.screen.flows) == 2
         
-#         await pilot.pause()
+        await pilot.pause()
         
-#         # Should only show 2 non-archived flows
-#         assert len(screen.flows) == 2
-#         for flow in screen.flows:
-#             assert not flow.archived
+        # Select first flow
+        await pilot.press("down")  # Navigate to FlowScreen
+        await pilot.pause()
+        
+        # Press Enter
+        await pilot.press("enter")
+        
+        # Check that flow was activated
+        active_flow_id = get_active_flow_id(db, app.session_start - timedelta(seconds=1))
+        assert active_flow_id == flow_id
 
+        # Select second flow
+        await pilot.press("down")  # Navigate to FlowScreen
+        await pilot.pause()
 
-# async def test_flow_selection_updates_selected_flow(db, sample_flows):
-#     """Test that selecting a flow updates the selected_flow property."""
-#     # Create flows in database
-#     for flow in sample_flows[:2]:
-#         new_flow(db, flow)
-    
-#     app = RGApp(db)
-#     async with app.run_test() as pilot:
-#         screen = FlowScreen()
-#         app.install_screen(screen, "test_flow_screen")
-#         await app.push_screen("test_flow_screen")
+                # Press Enter
+        await pilot.press("a")
         
-#         await pilot.pause()
-        
-#         flows_list = screen.query_one("#flows_list", ListView)
-        
-#         # Simulate highlighting first flow
-#         flows_list.index = 0
-#         flows_list.post_message(flows_list.Highlighted(flows_list, flows_list.children[0]))
-        
-#         await pilot.pause()
-        
-#         assert screen.selected_flow is not None
-#         assert screen.selected_flow.name == "Test Flow 1"
-
-
-# async def test_enter_key_activates_selected_flow(db, sample_flows):
-#     """Test that pressing Enter activates the selected flow."""
-#     # Create flow in database
-#     flow_id = new_flow(db, sample_flows[0])
-    
-#     app = RGApp(db)
-#     async with app.run_test() as pilot:
-#         screen = FlowScreen()
-#         app.install_screen(screen, "test_flow_screen")
-#         await app.push_screen("test_flow_screen")
-        
-#         await pilot.pause()
-        
-#         # Select first flow
-#         flows_list = screen.query_one("#flows_list", ListView)
-#         flows_list.index = 0
-#         flows_list.post_message(flows_list.Highlighted(flows_list, flows_list.children[0]))
-        
-#         await pilot.pause()
-        
-#         # Press Enter
-#         await pilot.press("enter")
-        
-#         # Check that flow was activated
-#         active_flow_id = get_active_flow_id(db)
-#         assert active_flow_id == flow_id
-
-
-# async def test_a_key_activates_selected_flow(db, sample_flows):
-#     """Test that pressing 'a' key activates the selected flow."""
-#     # Create flow in database
-#     flow_id = new_flow(db, sample_flows[0])
-    
-#     app = RGApp(db)
-#     async with app.run_test() as pilot:
-#         screen = FlowScreen()
-#         app.install_screen(screen, "test_flow_screen")
-#         await app.push_screen("test_flow_screen")
-        
-#         await pilot.pause()
-        
-#         # Select first flow
-#         flows_list = screen.query_one("#flows_list", ListView)
-#         flows_list.index = 0
-#         flows_list.post_message(flows_list.Highlighted(flows_list, flows_list.children[0]))
-        
-#         await pilot.pause()
-        
-#         # Press 'a' key
-#         await pilot.press("a")
-        
-#         # Check that flow was activated
-#         active_flow_id = get_active_flow_id(db)
-#         assert active_flow_id == flow_id
-
-
-# async def test_activation_shows_success_notification(db, sample_flows):
-#     """Test that successful flow activation shows a notification."""
-#     # Create flow in database
-#     new_flow(db, sample_flows[0])
-    
-#     app = RGApp(db)
-#     async with app.run_test() as pilot:
-#         screen = FlowScreen()
-#         app.install_screen(screen, "test_flow_screen")
-#         await app.push_screen("test_flow_screen")
-        
-#         await pilot.pause()
-        
-#         # Select first flow
-#         flows_list = screen.query_one("#flows_list", ListView)
-#         flows_list.index = 0
-#         flows_list.post_message(flows_list.Highlighted(flows_list, flows_list.children[0]))
-        
-#         await pilot.pause()
-        
-#         # Press 'a' key to activate
-#         await pilot.press("a")
-        
-#         # Check for notification (this would need to be verified through app state)
-#         # The notification system in Textual is internal, so we verify the flow was activated
-#         active_flow_id = get_active_flow_id(db)
-#         assert active_flow_id is not None
+        # Check that flow was activated
+        active_flow_id = get_active_flow_id(db, app.session_start - timedelta(seconds=1))
+        assert active_flow_id == flow_id1
 
 
 # async def test_activation_without_selected_flow_does_nothing(db):
@@ -236,29 +140,31 @@ async def test_flow_screen_loads_flows_from_database(db, sample_flows):
 #         assert active_flow_id is None
 
 
-# async def test_refresh_flows_action_reloads_flows(db, sample_flows):
-#     """Test that refresh action reloads flows from database."""
-#     app = RGApp(db)
-#     async with app.run_test() as pilot:
-#         screen = FlowScreen()
-#         app.install_screen(screen, "test_flow_screen")
-#         await app.push_screen("test_flow_screen")
+async def test_refresh_flows_action_reloads_flows(db, sample_flows):
+    """Test that refresh action reloads flows from database."""
+    app = RGApp(db)
+    async with app.run_test() as pilot:
+        await pilot.press("escape")
+        await pilot.press("2")  # Navigate to FlowScreen
         
-#         await pilot.pause()
+        await pilot.pause()
         
-#         # Initially no flows
-#         assert len(screen.flows) == 0
+        # Initially no flows
+        assert len(app.screen.flows) == 0
         
-#         # Add a flow to database
-#         new_flow(db, sample_flows[0])
+        # Add a flow to database
+        new_flow(db, sample_flows[0])
         
-#         # Press 'r' to refresh
-#         await pilot.press("r")
-#         await pilot.pause()
+        # Press 'r' to refresh
+        await pilot.press("r")
+        await pilot.pause()
         
-#         # Should now show the new flow
-#         assert len(screen.flows) == 1
-#         assert screen.flows[0].name == "Test Flow 1"
+        # Should now show the new flow
+        assert len(app.screen.flows) == 1
+        assert app.screen.flows[0].name == "Test Flow 1"
+        list_items = app.screen.query('.flow_list_items')
+        list_view = app.screen.query_one('#flows_list')
+        assert len(list_items) == 1
 
 
 # async def test_flow_display_includes_creation_date(db, sample_flows):
