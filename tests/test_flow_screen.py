@@ -165,6 +165,32 @@ async def test_refresh_flows_action_reloads_flows(db, sample_flows):
         list_items = app.screen.query('.flow_list_item')
         assert len(list_items) == 1
 
+@pytest.mark.asyncio
+async def test_refresh_flows_with_last_item_selected_does_not_crash(db, sample_flows):
+    """Test that refreshing flows with last item selected does not crash."""
+    # Add two flows
+    new_flow(db, sample_flows[0])
+    new_flow(db, sample_flows[1])
+
+    app = RGApp(db)
+    async with app.run_test() as pilot:
+        await pilot.press("escape")
+        await pilot.press("2")  # Go to FlowScreen
+        await pilot.pause()
+
+        # Select the last item (second flow)
+        await pilot.press("down")
+        await pilot.pause()
+
+        # Refresh the flows list (no changes to DB)
+        # If the bug is not fixed, this will raise an exception and the test will fail
+        await pilot.press("r")
+        await pilot.pause()
+
+        # Optionally, check that the screen is still responsive and shows both flows
+        assert len(app.screen.flows) == 2
+        assert app.screen.flows[0].name == "Test Flow 1"
+        assert app.screen.flows[1].name == "Test Flow 2"
 
 # async def test_flow_display_includes_creation_date(db, sample_flows):
 #     """Test that flow display includes creation date."""
