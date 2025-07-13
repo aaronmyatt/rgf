@@ -1,11 +1,8 @@
 from textual.binding import Binding
-from textual.widgets import Input, Static
+from textual.widgets import Static
 from textual import events
 from textual.screen import Screen
 from textual.message import Message
-
-from app_actions import get_active_flow
-
 
 class ActiveFlowChanged(Message):
     """Posted when active flow changes"""
@@ -37,9 +34,8 @@ class FlowHeader(Static):
 
     def on_active_flow_changed(self, event: ActiveFlowChanged):
         """Update header text in all screens"""
-        active_flow = get_active_flow(self.app.db, self.app.session_start)
-        flow_name = active_flow.name if active_flow else "No active flow"
-        self.update(flow_name)        
+        flow_name = event.flow_name or "No active flow"
+        self.update(flow_name)
 
 
 class BaseScreen(Screen):
