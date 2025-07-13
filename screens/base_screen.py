@@ -14,6 +14,7 @@ class ActiveFlowChanged(Message):
 class FlowHeader(Static):
     """Header displaying the active flow name"""
     id="flow_header"
+    
     DEFAULT_CSS = '''
     FlowHeader {
         background: dodgerblue;
@@ -31,11 +32,6 @@ class FlowHeader(Static):
         self.styles.background = "dodgerblue"
         self.styles.color = "white"
         self.styles.padding = (0, 1)
-
-    def on_active_flow_changed(self, event: ActiveFlowChanged):
-        """Update header text in all screens"""
-        flow_name = event.flow_name or "No active flow"
-        self.update(flow_name)
 
 
 class BaseScreen(Screen):
@@ -71,4 +67,7 @@ class BaseScreen(Screen):
     def on_active_flow_changed(self, event: ActiveFlowChanged):
         """Update header text when active flow changes"""
         header = self.query_one(FlowHeader)
-        header.update(event.flow_name)
+        if event.flow_name == None:
+            header.update("No active flow")
+        else:
+            header.update(event.flow_name)
