@@ -4,6 +4,8 @@ from textual import events
 from textual.screen import Screen
 from textual.message import Message
 
+from app_actions import get_active_flow
+
 
 class ActiveFlowChanged(Message):
     """Posted when active flow changes"""
@@ -14,6 +16,7 @@ class ActiveFlowChanged(Message):
 
 class FlowHeader(Static):
     """Header displaying the active flow name"""
+    id="flow_header"
     DEFAULT_CSS = '''
     FlowHeader {
         background: dodgerblue;
@@ -31,6 +34,12 @@ class FlowHeader(Static):
         self.styles.background = "dodgerblue"
         self.styles.color = "white"
         self.styles.padding = (0, 1)
+
+    def on_active_flow_changed(self, event: ActiveFlowChanged):
+        """Update header text in all screens"""
+        active_flow = get_active_flow(self.app.db, self.app.session_start)
+        flow_name = active_flow.name if active_flow else "No active flow"
+        self.update(flow_name)        
 
 
 class BaseScreen(Screen):

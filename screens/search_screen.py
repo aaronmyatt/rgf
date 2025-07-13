@@ -8,11 +8,11 @@ from textual.containers import Horizontal, Vertical, Container
 from textual import events
 from rich.text import Text
 from rich.style import Style
-from .base_screen import BaseScreen
+from .base_screen import BaseScreen, FlowHeader, ActiveFlowChanged
 
 # Import shared logic from waystation.py
 from waystation import Match, UserGrep, get_rg_matches, get_grep_ast_preview
-from app_actions import activate_flow, get_active_flow_id, get_latest_flow, save_match
+from app_actions import activate_flow, get_active_flow_id, get_latest_flow, save_match, get_active_flow
 
 class UserGrepInput(Container):
     """

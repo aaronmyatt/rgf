@@ -2,7 +2,7 @@ from enum import StrEnum
 from textual.app import ComposeResult
 from textual.widgets import Static, Footer, ListView, ListItem, Label
 from textual import events
-from .base_screen import BaseScreen
+from .base_screen import BaseScreen, FlowHeader, ActiveFlowChanged
 from db import Flow, list_rows
 from app_actions import activate_flow
 
@@ -96,6 +96,7 @@ class FlowScreen(BaseScreen):
         if self.selected_flow and event.key == 'enter':
             try:
                 activate_flow(self.app.db, self.selected_flow.id)
+                self.post_message(ActiveFlowChanged(self.selected_flow.name))
                 self.notify(f"Activated flow: {self.selected_flow.name}")
             except Exception as e:
                 self.notify(f"Error activating flow: {str(e)}", severity="error")
