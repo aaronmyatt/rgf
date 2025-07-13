@@ -1,8 +1,8 @@
 import pytest
 from datetime import datetime, timedelta, timezone
-from textual.widgets import ListView, ListItem, Label
+from textual.widgets import ListView, ListItem, Label, Input, TextArea, Button
 from screens.flow_screen import FlowScreen, Words
-from db import Flow, get_db
+from db import Flow, get_db, get_row
 from app_actions import new_flow, activate_flow, get_active_flow_id
 from cli import RGApp
 
@@ -191,6 +191,7 @@ async def test_refresh_flows_with_last_item_selected_does_not_crash(db, sample_f
         assert len(app.screen.flows) == 2
         assert app.screen.flows[0].name == "Test Flow 1"
         assert app.screen.flows[1].name == "Test Flow 2"
+
 async def test_edit_flow_name_and_description(db, sample_flows):
     """Test editing a flow's name and description."""
     # Insert sample flow
@@ -206,15 +207,19 @@ async def test_edit_flow_name_and_description(db, sample_flows):
         # Verify initial flow name
         flows_list = app.screen.query_one("#flows_list", ListView)
         list_item = flows_list.children[0]
+        await pilot.click(list_item)
+        
+
         initial_label = list_item.query_one(Label).renderable
         assert sample_flows[0].name in initial_label
+        assert app.screen.selected_flow is not None
         
         # Press 'e' to edit the flow
         await pilot.press("e")
         await pilot.pause()  # Wait for overlay to appear
-        
+
         # Update name and description
-        overlay = app.query_one("#flow_edit_overlay")
+        overlay = app.screen.query_one("#flow_edit_overlay")
         name_input = overlay.query_one("#flow_name_input", Input)
         desc_input = overlay.query_one("#flow_description_input", TextArea)
         
@@ -226,7 +231,7 @@ async def test_edit_flow_name_and_description(db, sample_flows):
         
         # Press Save button
         save_button = overlay.query_one("#save_flow_button", Button)
-        await save_button.action_press()
+        save_button.action_press()
         await pilot.pause()  # Wait for save to complete
         
         # Verify database update

@@ -1,4 +1,3 @@
-import json
 from enum import StrEnum
 from textual.app import ComposeResult
 from textual.widgets import Static, Footer, ListView, ListItem, Label
@@ -16,11 +15,11 @@ class Words(StrEnum):
 
 class FlowEditOverlay(Container):
     """Overlay for editing flow details"""
+    id = "flow_edit_overlay"
     
     def __init__(self, flow: Flow):
         super().__init__()
         self.flow = flow
-        self.id = "flow_edit_overlay"
         
     def compose(self) -> ComposeResult:
         yield Input(
@@ -165,7 +164,8 @@ class FlowScreen(BaseScreen):
         if event.button.id == "save_flow_button":
             await self.save_flow_changes()
         elif event.button.id == "cancel_flow_button":
-            self.query_one("#flow_edit_overlay", remove=True)
+            overlay = self.query_one("#flow_edit_overlay")
+            overlay.remove()
 
     async def save_flow_changes(self):
         """Save changes made in the edit overlay"""
