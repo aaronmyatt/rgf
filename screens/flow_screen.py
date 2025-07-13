@@ -1,10 +1,11 @@
+import json
 from enum import StrEnum
 from textual.app import ComposeResult
 from textual.widgets import Static, Footer, ListView, ListItem, Label
 from textual import events
 from .base_screen import BaseScreen, FlowHeader, ActiveFlowChanged
 from db import Flow, list_rows
-from app_actions import activate_flow
+from app_actions import activate_flow, get_flow_match_counts
 
 class Words(StrEnum):
     """Text constants for the FlowScreen."""
@@ -47,17 +48,8 @@ class FlowScreen(BaseScreen):
             match_counts = {}
             if flow_ids:
                 # Execute a single query to get counts for all flows
-                result = self.app.db.execute(
-                    """
-                    SELECT flows_id, COUNT(*) as match_count
-                    FROM flow_matches
-                    WHERE flows_id IN ({}) AND archived = 0
-                    GROUP BY flows_id
-                    """.format(','.join('?' * len(flow_ids))),
-                    flow_ids
-                )
-                # Convert results to dictionary {flow_id: count}
-                match_counts = {row['flows_id']: row['match_count'] for row in result}
+                results = get_flow_match_counts(self.app.db, flow_ids)
+                match_counts = {row['flows_id']: row['match_count'] for row in results}
 
             # Update the ListView
             flows_list = self.query_one("#flows_list", ListView)
@@ -67,7 +59,8 @@ class FlowScreen(BaseScreen):
                 flows_list.append(ListItem(Label(Words.NO_FLOWS_MESSAGE)))
             else:
                 for flow in self.flows:
-                    count = match_counts.get(flow.id, 0)
+                    count = match_counts.get(flow.id)
+                    print(f"WAT: {flow.id} {count} {match_counts}")
                     count_text = f"{count} match{'es' if count != 1 else ''}"
 
                     # Show flow name, match count, and creation date

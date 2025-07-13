@@ -97,3 +97,13 @@ def get_flow_history(db, limit: int = 10) -> list:
         ORDER BY fh.created_at DESC
         LIMIT ?
     """, [limit]).fetchall()]
+
+def get_flow_match_counts(db, flow_ids):
+    return db.query(
+        f"""
+        SELECT flows_id, COUNT(*) as match_count
+        FROM flow_matches
+        WHERE flows_id IN ({','.join([str(i) for i in flow_ids])}) AND archived = 0
+        GROUP BY flows_id
+        """
+    )
