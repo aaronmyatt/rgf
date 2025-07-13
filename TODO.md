@@ -8,12 +8,12 @@
     [x] keybinding (s)
     [x] show notification on save
     [x] highlight saved rows
-        [] highlight flow_matches for actived flow
+        [] highlight flow_matches for activated flow
         [] maybe a count somewhere?
     [x] create flow if it doesn't exist
     [x] add match to flow
     [] grep pattern history?
-BUG: up arrow with no data in datatable throws error
+[x] BUG: up arrow with no data in datatable throws error
     <!-- [] use `/` to search for patterns in the current flow
     [] use `?` to search for patterns in all flows
     [] use `!` to search for patterns in all matches
@@ -25,18 +25,45 @@ BUG: up arrow with no data in datatable throws error
         [] regex support
         [] exact match
     [] vim like nav h,j
+[] track which git project the flow is from
+[] track the last commit hash at the time of saving the match
+    [] check whether the match is out of sync if hash has changed
+[] dynamically refine preview window
+    [] expand (lines up or down) the file preview 
+    [] include top of file (to show imports)
+[] dynamically refine search window
+    [] search in the file of the match
+    [] search in the directory of the match
+    [] add parent directories
+    > I'm thinking to use +/- bindings to increase/decrease the search scope
+[] start new search from anywhere with '/'?
+[] 
+
     
 [x] flows screen
     [x] rename screen!
 [x] list flows from db
     [x] just show a datatable for now
 [] CRUD flows
+    [x] update/edit
+    [] create new flow (n)
+    [] archive flow (d)
     [] bindings?
-[] command pallete to find flows
-[] flow name / description
+[] command palette to find flows
+[x] flow name / description
+
+[] BUG: match count does not update on flow_screen after adding new matches
+[] BUG: match highlight (bg green) does not update (or clear) when changing flow
 
 [] flow/steps (singular) screen
 [] rename screen
 [] list FlowMatches
 [] Add title/notes to matches
 [x] BUG: fix datatable throwing when the same rows are added. How can we defend against it? Always clear the table on input submission? Or iterate through existing rows for rows with the same key/id?
+
+[] copy steps to clipboard for early llm usage
+[] user defined commands/bindings to send steps to llm or other tools
+[] export as:
+    [] markdown
+    [] pdf
+    [] webpage
