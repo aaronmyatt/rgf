@@ -41,24 +41,44 @@ class FlowScreen(BaseScreen):
         try:
             # Get all non-archived flows
             self.flows = list_rows(self.app.db, "flows", Flow, where="archived = ?", where_args=[0])
-            
+
+            # Get match counts for all flows in a single query
+            flow_ids = [flow.id for flow in self.flows]
+            match_counts = {}
+            if flow_ids:
+                # Execute a single query to get counts for all flows
+                result = self.app.db.execute(
+                    """
+                    SELECT flows_id, COUNT(*) as match_count
+                    FROM flow_matches
+                    WHERE flows_id IN ({}) AND archived = 0
+                    GROUP BY flows_id
+                    """.format(','.join('?' * len(flow_ids))),
+                    flow_ids
+                )
+                # Convert results to dictionary {flow_id: count}
+                match_counts = {row['flows_id']: row['match_count'] for row in result}
+
             # Update the ListView
             flows_list = self.query_one("#flows_list", ListView)
             await flows_list.clear()
-            
+
             if not self.flows:
                 flows_list.append(ListItem(Label(Words.NO_FLOWS_MESSAGE)))
             else:
                 for flow in self.flows:
-                    # Show flow name and creation date
-                    label_text = f"{flow.name}"
+                    count = match_counts.get(flow.id, 0)
+                    count_text = f"{count} match{'es' if count != 1 else ''}"
+
+                    # Show flow name, match count, and creation date
+                    label_text = f"{flow.name} ({count_text})"
                     if flow.created_at:
-                        label_text += f" (Created: {flow.created_at[:10]})"  # Just the date part
+                        label_text += f" [Created: {flow.created_at[:10]}]"  # Just the date part
                     list_item = ListItem(Label(label_text))
                     list_item.id = flow_dom_id(flow)
                     list_item.add_class('flow_list_item')
                     flows_list.append(list_item)
-                    
+
         except Exception as e:
             # Handle database errors gracefully
             flows_list = self.query_one("#flows_list", ListView)
