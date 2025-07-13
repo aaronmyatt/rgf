@@ -289,6 +289,29 @@ async def test_save_match_relates_to_already_active_flow(db):
         """, (flow_id,)).fetchall()
         assert len(get_flows_and_matches) == 2, "The match should be added to the already active flow"
 
+async def test_cursor_navigation_on_empty_datatable_does_not_throw_error(db):
+    """Test that pressing up/down on an empty data table doesn't throw CellDoesNotExist error."""
+    app = RGApp(db)
+    async with app.run_test() as pilot:
+        # Ensure we start with an empty data table
+        datatable = app.screen.query_one('#matches_table')
+        assert len(datatable.rows) == 0
+        assert len(app.screen.matches) == 0
+        
+        # Focus the data table
+        datatable.focus()
+        
+        # These should not throw CellDoesNotExist errors
+        await pilot.press("up")
+        await pilot.press("down")
+        await pilot.press("up")
+        await pilot.press("down")
+        
+        # Should still have empty table and no crashes
+        assert len(datatable.rows) == 0
+        assert len(app.screen.matches) == 0
+
+
 async def test_open_in_editor_action(db):
     """Test the open in editor action (mocked)."""
     user_grep = UserGrep("def", ["test_data/"])
