@@ -191,47 +191,51 @@ async def test_refresh_flows_with_last_item_selected_does_not_crash(db, sample_f
         assert len(app.screen.flows) == 2
         assert app.screen.flows[0].name == "Test Flow 1"
         assert app.screen.flows[1].name == "Test Flow 2"
-
-# async def test_flow_display_includes_creation_date(db, sample_flows):
-#     """Test that flow display includes creation date."""
-#     # Create flow in database
-#     new_flow(db, sample_flows[0])
+async def test_edit_flow_name_and_description(db, sample_flows):
+    """Test editing a flow's name and description."""
+    # Insert sample flow
+    flow_id = new_flow(db, sample_flows[0])
     
-#     app = RGApp(db)
-#     async with app.run_test() as pilot:
-#         screen = FlowScreen()
-#         app.install_screen(screen, "test_flow_screen")
-#         await app.push_screen("test_flow_screen")
+    app = RGApp(db)
+    async with app.run_test() as pilot:
+        # Navigate to FlowScreen
+        await pilot.press("escape")
+        await pilot.press("2")
+        await pilot.pause()  # Wait for flows to load
         
-#         await pilot.pause()
+        # Verify initial flow name
+        flows_list = app.screen.query_one("#flows_list", ListView)
+        list_item = flows_list.children[0]
+        initial_label = list_item.query_one(Label).renderable
+        assert sample_flows[0].name in initial_label
         
-#         flows_list = screen.query_one("#flows_list", ListView)
-#         list_item = flows_list.children[0]
-#         label = list_item.children[0]
+        # Press 'e' to edit the flow
+        await pilot.press("e")
+        await pilot.pause()  # Wait for overlay to appear
         
-#         # Check that label contains both name and creation date
-#         label_text = str(label.renderable)
-#         assert "Test Flow 1" in label_text
-#         assert "Created:" in label_text
-
-
-# async def test_database_error_handling(db):
-#     """Test that database errors are handled gracefully."""
-#     app = RGApp(db)
-#     async with app.run_test() as pilot:
-#         screen = FlowScreen()
-#         app.install_screen(screen, "test_flow_screen")
+        # Update name and description
+        overlay = app.query_one("#flow_edit_overlay")
+        name_input = overlay.query_one("#flow_name_input", Input)
+        desc_input = overlay.query_one("#flow_description_input", TextArea)
         
-#         # Close the database to simulate an error
-#         db.close()
+        new_name = "Updated Flow Name"
+        new_desc = "This is an updated description"
         
-#         await app.push_screen("test_flow_screen")
-#         await pilot.pause()
+        name_input.value = new_name
+        desc_input.text = new_desc
         
-#         # Should show error message instead of crashing
-#         flows_list = screen.query_one("#flows_list", ListView)
-#         assert len(flows_list.children) == 1
+        # Press Save button
+        save_button = overlay.query_one("#save_flow_button", Button)
+        await save_button.action_press()
+        await pilot.pause()  # Wait for save to complete
         
-#         list_item = flows_list.children[0]
-#         label = list_item.children[0]
-#         assert "Error loading flows" in str(label.renderable)
+        # Verify database update
+        updated_flow = get_row(db, "flows", flow_id, Flow)
+        assert updated_flow.name == new_name
+        assert updated_flow.description == new_desc
+        
+        # Verify UI update
+        list_item = flows_list.children[0]
+        updated_label = list_item.query_one(Label).renderable
+        assert new_name in updated_label
+        assert new_name not in initial_label  # Verify change occurred
