@@ -66,25 +66,25 @@ class FlowScreen(BaseScreen):
 
     def on_list_view_highlighted(self, event):
         """Handle flow selection."""
-        try:
-            self.selected_flow = self.flows[event.list_view.index]
-        except IndexError:
-            dom_id = event.item.id
-            for flow in self.flows:
-                if 'wat'+str(hash(f"{flow.id}{flow.name}")) == dom_id:
-                    self.selected_flow = flow
-                    break
+        index = event.list_view.index
+        if index is None: 
+            return
+
+        if 0 <= index < len(self.flows):
+            self.selected_flow = self.flows[index]
+        else:
+            self.selected_flow = None
 
     def on_list_view_selected(self, event):
         """Handle flow selection."""
-        try:
-            self.selected_flow = self.flows[event.list_view.index]
-        except IndexError:
-            dom_id = event.item.id
-            for flow in self.flows:
-                if 'wat'+str(hash(f"{flow.id}{flow.name}")) == dom_id:
-                    self.selected_flow = flow
-                    break
+        index = event.list_view.index
+        if index is None: 
+            return
+        
+        if 0 <= index < len(self.flows):
+            self.selected_flow = self.flows[index]
+        else:
+            self.selected_flow = None
 
     def action_refresh_flows(self):
         """Refresh the flows list."""
