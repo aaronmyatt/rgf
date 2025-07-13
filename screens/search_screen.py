@@ -3,6 +3,7 @@ from os import system
 from textual.binding import Binding
 from textual.app import ComposeResult
 from textual.widgets import DataTable, Static, Input, Footer
+from textual.widgets.data_table import CellDoesNotExist
 from textual.containers import Horizontal, Vertical, Container
 from textual import events
 from rich.text import Text
@@ -124,23 +125,21 @@ class SearchScreen(BaseScreen):
 
     def action_cursor_up(self):
         cursor_coordinate = self.dg.cursor_coordinate
-        if(cursor_coordinate.row == 0 and cursor_coordinate.column == 0):
-            """do nothing, cursor is already at the top"""
-            return
-
-        cell_key = self.dg.coordinate_to_cell_key(cursor_coordinate)
-        row_key, _ = cell_key
-        self.update_preview(row_key.value - 1)
+        try:
+            cell_key = self.dg.coordinate_to_cell_key(cursor_coordinate)
+            row_key, _ = cell_key
+            self.update_preview(row_key.value - 1)
+        except CellDoesNotExist:
+            """likely an empty table"""
 
     def action_cursor_down(self):
         cursor_coordinate = self.dg.cursor_coordinate
-        if(cursor_coordinate.row == 0 and cursor_coordinate.column == 0):
-            """do nothing, cursor is already at the top"""
-            return
-        
-        cell_key = self.dg.coordinate_to_cell_key(cursor_coordinate)
-        row_key, _ = cell_key
-        self.update_preview(row_key.value + 1)
+        try:
+            cell_key = self.dg.coordinate_to_cell_key(cursor_coordinate)
+            row_key, _ = cell_key
+            self.update_preview(row_key.value + 1)
+        except CellDoesNotExist:
+            """likely an empty table"""
 
     def on_key(self, event: events.Key) -> None:
         # Prevent screen switching if an Input is focused

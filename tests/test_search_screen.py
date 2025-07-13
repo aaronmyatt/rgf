@@ -53,7 +53,7 @@ async def test_search_screen_initialization_without_args(db):
 
 async def test_data_table_row_selection_updates_preview(db):
     """Test that selecting a row in the data table updates the preview."""
-    user_grep = UserGrep("class", ["./test_data/"])
+    user_grep = UserGrep("def", ["./test_data/"])
     app = RGApp(db, user_grep)
     async with app.run_test() as pilot:
         datatable = app.screen.query_one('#matches_table')
