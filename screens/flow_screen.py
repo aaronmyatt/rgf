@@ -155,9 +155,6 @@ class FlowScreen(BaseScreen):
     def action_edit_flow(self):
         """Show edit overlay for selected flow"""
         if self.selected_flow:
-            # Remove existing overlay if present
-            self.query_one("#flow_edit_overlay", remove=True, quiet=True)
-            
             # Create and mount new overlay
             overlay = FlowEditOverlay(self.selected_flow)
             self.mount(overlay)
