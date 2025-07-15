@@ -2,7 +2,7 @@ from enum import StrEnum
 from textual.app import ComposeResult
 from textual.widgets import Static, Footer, ListView, ListItem, Label
 from textual import events
-from textual.containers import Container
+from textual.containers import Container, Horizontal
 from textual.widgets import Input, TextArea, Button
 from .base_screen import BaseScreen, FlowHeader, ActiveFlowChanged
 from db import Flow, list_rows, update_row
@@ -32,8 +32,9 @@ class FlowEditOverlay(Container):
             text=self.flow.description or "",
             classes="description-textarea"
         )
-        yield Button("Save", id="save_flow_button", variant="primary")
-        yield Button("Cancel", id="cancel_flow_button")
+        with Horizontal():
+            yield Button("Save", id="save_flow_button", variant="primary")
+            yield Button("Cancel", id="cancel_flow_button")
 
     def on_mount(self):
         self.query_one("#flow_name_input").focus()
