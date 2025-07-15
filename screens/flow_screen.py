@@ -47,7 +47,8 @@ class FlowScreen(BaseScreen):
     BINDINGS = BaseScreen.COMMON_BINDINGS + [
         ("a", "activate_selected_flow", "Activate Flow"),
         ("r", "refresh_flows", "Refresh"),
-        ("e", "edit_flow", "Edit Flow"),  # New binding
+        ("e", "edit_flow", "Edit Flow"),
+        ("n", "new_flow", "New Flow"),
     ]
     
     def __init__(self, **kwargs):
@@ -191,12 +192,20 @@ class FlowScreen(BaseScreen):
         
         try:
             # Update flow in database
-            self.selected_flow.name = new_name
-            self.selected_flow.description = new_desc or None
-            update_row(self.app.db, "flows", self.selected_flow.id, self.selected_flow)
+            if self.selected_flow and getattr(self.selected_flow, "id", None):
+                # Existing flow update
+                self.selected_flow.name = new_name
+                self.selected_flow.description = new_desc or None
+                update_row(self.app.db, "flows", self.selected_flow.id, self.selected_flow)
+                action = "Updated"
+            else:
+                # New flow creation
+                from app_actions import new_flow
+                flow_id = new_flow(self.app.db, Flow(name=new_name, description=new_desc))
+                action = "Created"
             
             # Refresh UI and close overlay
-            self.notify(f"Updated flow: {new_name}")
+            self.notify(f"{action} flow: {new_name}")
             overlay.remove()
             await self.load_flows()
         except Exception as e:
