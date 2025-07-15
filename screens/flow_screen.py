@@ -177,6 +177,18 @@ class FlowScreen(BaseScreen):
             overlay = self.query_one("#flow_edit_overlay")
             overlay.remove()
 
+    def action_new_flow(self):
+        """Create a new flow."""
+        new_flow = Flow(name="", description="")
+        overlay = FlowEditOverlay(new_flow)
+        self.mount(overlay)
+        overlay.scroll_visible()
+
+    def on_input_submitted(self, event: Input.Submitted):
+        """Handle Enter key in input fields."""
+        if event.input.id == "flow_name_input":
+            self.run_worker(self.save_flow_changes())
+
     async def save_flow_changes(self):
         """Save changes made in the edit overlay"""
         overlay = self.query_one("#flow_edit_overlay")
