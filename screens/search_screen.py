@@ -8,7 +8,7 @@ from textual.containers import Horizontal, Vertical, Container
 from textual import events
 from rich.text import Text
 from rich.style import Style
-from .base_screen import BaseScreen, FlowHeader, ActiveFlowChanged
+from .base_screen import BaseScreen, FlowHeader, ActiveFlowChanged, FlowDataChanged
 
 # Import shared logic from waystation.py
 from waystation import Match, UserGrep, get_rg_matches, get_grep_ast_preview
@@ -201,6 +201,9 @@ class SearchScreen(BaseScreen):
         # Highlight the saved row
         for cell in self.dg.get_row(row.key):
             cell.stylize(Style(bgcolor="green", color="black"))
+
+        # Notify other screens that flow data has changed (e.g., match count)
+        self.post_message(FlowDataChanged())
 
     def action_new_search(self):
         """Focus on the pattern input and clear it for a new search."""

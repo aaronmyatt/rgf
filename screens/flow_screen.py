@@ -65,6 +65,10 @@ class FlowScreen(BaseScreen):
         """Load flows when screen is mounted."""
         await self.load_flows()
 
+    async def on_screen_resume(self, event):
+        """Refresh flows when this screen becomes active again."""
+        await self.load_flows()
+
     async def load_flows(self):
         """Load all non-archived flows from database."""
         try:
@@ -131,6 +135,10 @@ class FlowScreen(BaseScreen):
     def action_refresh_flows(self):
         """Refresh the flows list."""
         self.run_worker(self.load_flows)
+
+    async def on_flow_data_changed(self, event):
+        """Refresh flows when notified that flow data has changed."""
+        await self.load_flows()
 
     def on_key(self, event):
         """Activate the currently selected flow."""

@@ -10,6 +10,10 @@ class ActiveFlowChanged(Message):
         self.flow_name = flow_name
         super().__init__()
 
+class FlowDataChanged(Message):
+    """Posted when flow data (such as match counts) changes."""
+    pass
+
 
 class FlowHeader(Static):
     """Header displaying the active flow name"""
