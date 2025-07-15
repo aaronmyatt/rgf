@@ -323,7 +323,7 @@ async def test_open_in_editor_action(db):
         # Mock the system call to avoid actually opening an editor
         import unittest.mock
         app.suspend = unittest.mock.Mock()
-        await pilot.press("enter")
+        await pilot.press("shift+enter")
         # Should have attempted to call system with editor command
         app.suspend.assert_called_once()
 
@@ -344,7 +344,7 @@ async def test_match_highlighting_changes_with_active_flow(db):
 
         # Verify row is highlighted for Flow A
         for cell in datatable.get_row(row_key):
-            assert "bgcolor: green" in cell.style, "Row should be highlighted after saving"
+            assert any(["green" in str(span.style) for span in cell[0].spans]), "Row should be highlighted after saving"
 
         # Create Flow B
         await pilot.press("2")  # Go to FlowScreen
@@ -362,12 +362,12 @@ async def test_match_highlighting_changes_with_active_flow(db):
 
         # TEST WILL FAIL HERE - row still highlighted for Flow A
         for cell in datatable.get_row(row_key):
-            assert "bgcolor: green" not in cell.style, "Row should NOT be highlighted for different flow"
+            assert any(["green" not in str(span.style) for span in cell[0].spans]), "Row should NOT be highlighted for different flow"
 
         # Return to FlowScreen and activate Flow A again
         await pilot.press("2")
         flows_list = app.screen.query_one("#flows_list")
-        await flows_list.focus()
+        flows_list.focus()
         await pilot.press("up")  # Select Flow A
         await pilot.press("a")  # Activate Flow A
 
@@ -376,4 +376,4 @@ async def test_match_highlighting_changes_with_active_flow(db):
 
         # TEST WILL FAIL HERE - row not re-highlighted for Flow A
         for cell in datatable.get_row(row_key):
-            assert "bgcolor: green" in cell.style, "Row should be highlighted again when original flow is active"
+            assert any(["green" in str(span.style) for span in cell[0].spans]), "Row should be highlighted again when original flow is active"

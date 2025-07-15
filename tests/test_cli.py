@@ -92,7 +92,7 @@ async def test_save_match_notification(db):
 
         with patch.object(app, 'notify') as mock_notify:
             # Trigger save action
-            app.screen.action_save_match()
+            await app.screen.action_save_match()
 
             # Verify notification
             mock_notify.assert_called_once()
@@ -107,7 +107,7 @@ async def test_save_match_error_notification(db):
         app.screen.dg.focus()
 
         with patch.object(app, 'notify') as mock_notify:
-            app.screen.action_save_match()
+            await app.screen.action_save_match()
 
             mock_notify.assert_called_once()
             args, kwargs = mock_notify.call_args
@@ -120,6 +120,6 @@ async def test_save_match_causes_saved_row_to_be_highlighted(db):
     app = RGApp(db, user_grep)
     async with app.run_test() as pilot:
         app.screen.dg.focus()
-        app.screen.action_save_match()
+        await app.screen.action_save_match()
         row = app.screen.dg.ordered_rows[0]
-        assert app.screen.dg.get_row(row.key)[0].spans[0].style.bgcolor.name == "green"
+        assert any([span for span in app.screen.dg.get_row(row.key)[0].spans if "green" in str(span.style)])

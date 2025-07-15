@@ -93,7 +93,6 @@ class FlowScreen(BaseScreen):
             else:
                 for flow in self.flows:
                     count = match_counts.get(flow.id)
-                    print(f"WAT: {flow.id} {count} {match_counts}")
                     count_text = f"{count} match{'es' if count != 1 else ''}"
 
                     # Show flow name, match count, and creation date

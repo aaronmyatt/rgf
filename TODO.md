@@ -46,14 +46,14 @@
     [x] just show a datatable for now
 [] CRUD flows
     [x] update/edit
-    [] create new flow (n)
+    [x] create new flow (n)
     [] archive flow (d)
     [] bindings?
 [] command palette to find flows
 [x] flow name / description
 
-> [] BUG: match count does not update on flow_screen after adding new matches
-[] BUG: match highlight (bg green) does not update (or clear) when changing flow
+[x] BUG: match count does not update on flow_screen after adding new matches
+[x] BUG: match highlight (bg green) does not update (or clear) when changing flow
 
 [] flow/steps (singular) screen
 [] rename screen
@@ -67,3 +67,5 @@
     [] markdown
     [] pdf
     [] webpage
+
+[] exclude file/pattern from results moving forward

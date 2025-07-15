@@ -7,12 +7,11 @@ name = "pypi"
 cov = "python -m pytest --cov=. tests/"
 cli = "textual run --dev cli.py"
 console = "textual run console"
-test = "python -m pytest --pdb --pdbcls=IPython.terminal.debugger:TerminalPdb"
-fail = "python -m pytest -x"
+test = "python -m pytest --ff --pdb --pdbcls=IPython.terminal.debugger:TerminalPdb"
+fail = "python -m pytest --ff -x"
 
 [packages]
 textual = "*"
-grep-ast = "*"
 textual-dev = "*"
 sqlite-utils = "*"
 pytest = "*"
@@ -20,6 +19,7 @@ pytest-cov = "*"
 pytest-asyncio = "*"
 ipython = "*"
 ipdb = "*"
+grep-ast = "*"
 
 [dev-packages]
 

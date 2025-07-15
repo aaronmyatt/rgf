@@ -1,9 +1,11 @@
+import re
 import os
 import subprocess
 import json
 from dataclasses import dataclass
 from pathlib import Path
 from db import get_db, Match
+import grep_ast
 
 @dataclass
 class UserGrep:
@@ -45,18 +47,22 @@ def get_grep_ast_preview(match: Match):
     Run grep-ast on match.filename and return output as a string.
     If grep-ast fails, show the matching line and its context.
     """
+    if not match.line:
+        return "<no preview>"
     try:
-        result = subprocess.run(
-            ['grep-ast', Path(match.file_path).absolute()],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True
-        )
-        if result.returncode == 0 and result.stdout.strip():
-            return result.stdout
-        # If grep-ast fails, show context lines
+        path = Path(match.file_path).absolute()
+        lines = process_filename(path, {
+            "pattern": match.line.strip(),
+            "verbose": False,
+            "encoding": "utf8",
+            "ignore_case": True,
+            "color": True,
+            "line_numbers": False
+        })
+        if lines:
+            return lines
         try:
-            with open(match.file_path, 'r') as f:
+            with open(path, 'r') as f:
                 lines = f.readlines()
                 idx = match.line_no - 1
                 context = []
@@ -69,5 +75,43 @@ def get_grep_ast_preview(match: Match):
         except Exception as e:
             print(f"Error reading file {match.file_path}: {e}")
             return f"<no preview>"
-    except FileNotFoundError:
+    except FileNotFoundError as e:
+        print(e)
         return "<no preview>"
+
+def enumerate_files(fnames, spec, use_spec=False):
+    for fname in fnames:
+        fname = Path(fname)
+
+        # oddly, Path('.').name == "" so we will recurse it
+        if fname.name.startswith(".") or use_spec and spec.match_file(fname):
+            continue
+
+        if fname.is_file():
+            yield str(fname)
+            continue
+
+        if fname.is_dir():
+            for sub_fnames in enumerate_files(fname.iterdir(), spec, True):
+                yield sub_fnames
+
+
+def process_filename(filename, args):
+    try:
+        with open(filename, "r", encoding=args.get("encoding")) as file:
+            code = file.read()
+    except UnicodeDecodeError:
+        return
+
+    try:
+        tc = grep_ast.TreeContext(filename, code, verbose=args.get("verbose"), line_number=args.get("line_number"), color=args.get("color"))
+    except ValueError:
+        return
+
+    loi = tc.grep(re.escape(args.get("pattern")), ignore_case=args.get("ignore_case"))
+    if not loi:
+        return
+
+    tc.add_lines_of_interest(loi)
+    tc.add_context()
+    return tc.format()

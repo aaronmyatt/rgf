@@ -1087,14 +1087,14 @@
         },
         "tree-sitter-language-pack": {
             "hashes": [
-                "sha256:1757c04af8350ffdfd5509951fb7874dc1947604d6d9f16a2f88a0cd4fcc54cb",
-                "sha256:49aafe322eb59ef4d4457577210fb20c18c5535b1a42b8e753aa699ed3bf9eed",
-                "sha256:7ab5dd0e4383bd0c845c153f65da62df035591fc79759a5f6efd5b27aaa551c5",
-                "sha256:81aac45ddde6c7e9ac222d0157af03648b1382d4de3af321d1b913af96b796f0",
-                "sha256:e870a3cc067352b249393e887710dae4918c6454f7fd41e43108f3621a5f41f8"
+                "sha256:2f1db4abded09ba0cb7a2358b4f3a2937fe9bfd4fdd4b4ad9e89a0c283e1329f",
+                "sha256:5922afd7c2a2e632c4c69af10982b6017fd00ced70630c5f9e5d7c0d7d311b27",
+                "sha256:900eb3bd82c1bcf5cf20ed852b1b6fdc7eae89e40a860fa5e221a796687c359a",
+                "sha256:b3542ddaa1505716bc5b761e1aa718eafe64df988d700da62637cee501ac260f",
+                "sha256:da4a643618148d6ca62343c8457bfc472e7d122503d97fac237f06acbbd8aa33"
             ],
             "markers": "python_full_version >= '3.9.0'",
-            "version": "==0.8.0"
+            "version": "==0.9.0"
         },
         "tree-sitter-yaml": {
             "hashes": [

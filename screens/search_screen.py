@@ -75,8 +75,9 @@ class SearchScreen(BaseScreen):
     title = "Ripgrep > grep-ast Browser"
     BINDINGS = BaseScreen.COMMON_BINDINGS + [
         Binding(key="n", action="new_search", description="New Search", show=True),
-        Binding(key="s", action="save_match", description="Save Match", show=True),
-        Binding(key="enter", action="open_in_editor", description="Open in editor", show=True),
+        Binding(key="s", action="save_match", description="Save Match", show=False),
+        Binding(key="enter", action="save_match", description="Save Match", show=True),
+        Binding(key="shift+enter", action="open_in_editor", description="Open in editor", show=True),
         Binding(key="escape", action="unfocus_all", description="Unfocus", show=True),
         Binding(key="up", action="cursor_up", description="Cursor Up", show=False),
         Binding(key="down", action="cursor_down", description="Cursor Down", show=False),
@@ -163,7 +164,7 @@ class SearchScreen(BaseScreen):
                 self.focused.blur()
                 return
         elif event.key == "enter" and self.focused == self.dg:
-            self.action_open_in_editor()
+            self.action_save_match()
         elif event.key == "up":
             self.action_cursor_up()
         elif event.key == "down":
@@ -222,7 +223,12 @@ class SearchScreen(BaseScreen):
         self.matches = []
         self.dg.clear()
         pattern_input.focus()
+
     async def on_active_flow_changed(self, event: ActiveFlowChanged):
+        """Update row highlighting when the active flow changes."""
+        await self.refresh_row_highlighting()
+
+    async def on_screen_resume(self, event):
         """Update row highlighting when the active flow changes."""
         await self.refresh_row_highlighting()
 
@@ -235,7 +241,7 @@ class SearchScreen(BaseScreen):
             row = self.dg.ordered_rows[idx] if idx < len(self.dg.ordered_rows) else None
             if row:
                 for cell in self.dg.get_row(row.key):
-                    cell.style = ""
+                    cell.stylize(Style(color="white"))
         # Highlight rows for matches in the active flow
         flow_id = get_active_flow_id(self.app.db, session_start=self.app.session_start)
         match_ids = get_match_ids_for_flow(self.app.db, flow_id)
@@ -258,4 +264,4 @@ class SearchScreen(BaseScreen):
                 row = self.dg.ordered_rows[idx] if idx < len(self.dg.ordered_rows) else None
                 if row:
                     for cell in self.dg.get_row(row.key):
-                        cell.style = "bgcolor: green; color: black"
+                        cell.stylize(Style(bgcolor="green", color="black"))
