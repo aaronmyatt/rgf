@@ -3,6 +3,7 @@ from textual.app import ComposeResult
 from textual.widgets import Static, Footer, Input
 from textual import events
 from .base_screen import BaseScreen
+from app_actions import get_active_flow_id
 
 
 class StepScreen(BaseScreen):
@@ -15,3 +16,9 @@ class StepScreen(BaseScreen):
 
     def on_key(self, event: events.Key) -> None:
         super().on_key(event)
+
+    def on_mount(self):
+        """checks for an active flow and returns the matches for it"""
+
+        maybe_flow_id = get_active_flow_id(self.app.db)
+        

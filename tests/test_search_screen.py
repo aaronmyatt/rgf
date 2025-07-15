@@ -326,3 +326,54 @@ async def test_open_in_editor_action(db):
         await pilot.press("enter")
         # Should have attempted to call system with editor command
         app.suspend.assert_called_once()
+
+
+async def test_match_highlighting_changes_with_active_flow(db):
+    """Test that row highlighting updates when active flow changes"""
+    user_grep = UserGrep("def", ["test_data/"])
+    app = RGApp(db, user_grep)
+
+    async with app.run_test() as pilot:
+        datatable = app.screen.query_one('#matches_table')
+        datatable.focus()
+
+        # Save first match to Flow A
+        await pilot.press("s")
+        row_idx = datatable.cursor_coordinate.row
+        row_key = datatable.ordered_rows[row_idx].key
+
+        # Verify row is highlighted for Flow A
+        for cell in datatable.get_row(row_key):
+            assert "bgcolor: green" in cell.style, "Row should be highlighted after saving"
+
+        # Create Flow B
+        await pilot.press("2")  # Go to FlowScreen
+        await pilot.press("n")  # Create new flow
+        name_input = app.screen.query_one("#flow_name_input")
+        name_input.value = "Flow B"
+        await pilot.press("enter")  # Submit new flow
+
+        # Activate Flow B
+        await pilot.press("enter")  # Select new flow
+        await pilot.press("a")  # Activate flow
+
+        # Return to SearchScreen
+        await pilot.press("1")
+
+        # TEST WILL FAIL HERE - row still highlighted for Flow A
+        for cell in datatable.get_row(row_key):
+            assert "bgcolor: green" not in cell.style, "Row should NOT be highlighted for different flow"
+
+        # Return to FlowScreen and activate Flow A again
+        await pilot.press("2")
+        flows_list = app.screen.query_one("#flows_list")
+        await flows_list.focus()
+        await pilot.press("up")  # Select Flow A
+        await pilot.press("a")  # Activate Flow A
+
+        # Return to SearchScreen
+        await pilot.press("1")
+
+        # TEST WILL FAIL HERE - row not re-highlighted for Flow A
+        for cell in datatable.get_row(row_key):
+            assert "bgcolor: green" in cell.style, "Row should be highlighted again when original flow is active"

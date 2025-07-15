@@ -52,7 +52,7 @@
 [] command palette to find flows
 [x] flow name / description
 
-[] BUG: match count does not update on flow_screen after adding new matches
+> [] BUG: match count does not update on flow_screen after adding new matches
 [] BUG: match highlight (bg green) does not update (or clear) when changing flow
 
 [] flow/steps (singular) screen

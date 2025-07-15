@@ -5,6 +5,7 @@ from screens.flow_screen import FlowScreen, Words
 from db import Flow, get_db, get_row
 from app_actions import new_flow, activate_flow, get_active_flow_id
 from cli import RGApp
+from waystation import UserGrep
 
 
 @pytest.fixture
@@ -244,3 +245,43 @@ async def test_edit_flow_name_and_description(db, sample_flows):
         updated_label = list_item.query_one(Label).renderable
         assert new_name in updated_label
         assert new_name not in initial_label  # Verify change occurred
+
+async def test_flow_match_count_updates_after_saving_matches(db):
+    """Test that saving matches updates flow match counts in FlowScreen."""
+    user_grep = UserGrep("def", ["test_data/"])
+    app = RGApp(db, user_grep)
+
+    async with app.run_test() as pilot:
+        # Save first match
+        datatable = app.screen.query_one('#matches_table')
+        datatable.focus()
+        await pilot.press("s")
+
+        # Navigate to FlowScreen (key "2")
+        await pilot.press("2")
+        flow_screen = app.screen
+
+        # Find the flow list item
+        flows_list = flow_screen.query_one("#flows_list")
+        first_flow_item = flows_list.children[0]
+
+        # Verify match count shows "1 match"
+        assert "1 match" in first_flow_item.children[0].renderable
+
+        # Navigate back to SearchScreen (key "1")
+        await pilot.press("1")
+
+        # Save second match
+        await pilot.press("down")  # Move to next match
+        await pilot.press("s")     # Save second match
+
+        # Navigate back to FlowScreen
+        await pilot.press("2")
+        flow_screen = app.screen
+
+        # Find the flow list item again
+        flows_list = flow_screen.query_one("#flows_list")
+        first_flow_item = flows_list.children[0]
+
+        # TEST WILL FAIL HERE - still shows "1 match" instead of "2 matches"
+        assert "2 matches" in first_flow_item.children[0].renderable
