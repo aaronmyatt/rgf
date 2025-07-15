@@ -14,6 +14,15 @@ from .base_screen import BaseScreen, FlowHeader, ActiveFlowChanged, FlowDataChan
 from waystation import Match, UserGrep, get_rg_matches, get_grep_ast_preview
 from app_actions import activate_flow, get_active_flow_id, get_latest_flow, save_match, get_active_flow
 
+def get_match_ids_for_flow(db, flow_id):
+    """Return a set of match IDs for the given flow_id."""
+    if not flow_id:
+        return set()
+    rows = db.execute(
+        "SELECT matches_id FROM flow_matches WHERE flows_id = ?", (flow_id,)
+    ).fetchall()
+    return set(row[0] for row in rows)
+
 class UserGrepInput(Container):
     """
     Custom Input widget for UserGrep pattern input.
@@ -109,6 +118,7 @@ class SearchScreen(BaseScreen):
             self.update_preview(0)
         else:  # No matches found
             self.update_preview(0)
+        await self.refresh_row_highlighting()
 
     async def on_input_submitted(self, event):
         self.dg.clear()
@@ -116,6 +126,7 @@ class SearchScreen(BaseScreen):
         paths = self.query_one("#paths_input").value.split()
         self.user_grep = UserGrep(pattern, paths)
         await self.on_mount()
+        await self.refresh_row_highlighting()
 
     def update_preview(self, idx):
         try:
@@ -175,7 +186,7 @@ class SearchScreen(BaseScreen):
         except Exception as e:
             self.app.exit(str(e))
 
-    def action_save_match(self):
+    async def action_save_match(self):
         """Save the currently selected match to the database."""
         if not self.matches:
             self.notify("No matches available.", severity="warning")
@@ -197,10 +208,7 @@ class SearchScreen(BaseScreen):
         
         self.notify(f"Match saved: {self.matches[idx].file_name} at line {self.matches[idx].line_no}")
 
-        row = self.dg.ordered_rows[idx]
-        # Highlight the saved row
-        for cell in self.dg.get_row(row.key):
-            cell.stylize(Style(bgcolor="green", color="black"))
+        await self.refresh_row_highlighting()
 
         # Notify other screens that flow data has changed (e.g., match count)
         self.post_message(FlowDataChanged())
@@ -214,3 +222,40 @@ class SearchScreen(BaseScreen):
         self.matches = []
         self.dg.clear()
         pattern_input.focus()
+    async def on_active_flow_changed(self, event: ActiveFlowChanged):
+        """Update row highlighting when the active flow changes."""
+        await self.refresh_row_highlighting()
+
+    async def refresh_row_highlighting(self):
+        """Update row highlighting based on which matches belong to the active flow."""
+        if not hasattr(self, "dg") or not self.dg or not hasattr(self, "matches"):
+            return
+        # Clear all row highlighting
+        for idx, match in enumerate(self.matches):
+            row = self.dg.ordered_rows[idx] if idx < len(self.dg.ordered_rows) else None
+            if row:
+                for cell in self.dg.get_row(row.key):
+                    cell.style = ""
+        # Highlight rows for matches in the active flow
+        flow_id = get_active_flow_id(self.app.db, session_start=self.app.session_start)
+        match_ids = get_match_ids_for_flow(self.app.db, flow_id)
+        # We need to know the match id for each match in self.matches
+        # Assume that Match has a .id attribute if it was saved, otherwise None
+        # We'll try to look up the match id in the DB by file_path, line, etc if not present
+        for idx, match in enumerate(self.matches):
+            # Try to get match id from DB if not present
+            match_id = getattr(match, "id", None)
+            if match_id is None:
+                # Try to look up by file_path, line, etc
+                row = self.app.db.execute(
+                    "SELECT id FROM matches WHERE file_path = ? AND line_no = ? AND line = ?",
+                    (getattr(match, "file_path", getattr(match, "filename", "")), getattr(match, "line_no", 0), match.line)
+                ).fetchone()
+                if row:
+                    match_id = row[0]
+                    match.id = match_id
+            if match_id in match_ids:
+                row = self.dg.ordered_rows[idx] if idx < len(self.dg.ordered_rows) else None
+                if row:
+                    for cell in self.dg.get_row(row.key):
+                        cell.style = "bgcolor: green; color: black"
