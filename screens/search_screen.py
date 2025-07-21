@@ -226,6 +226,7 @@ class SearchScreen(BaseScreen):
 
     async def on_active_flow_changed(self, event: ActiveFlowChanged):
         """Update row highlighting when the active flow changes."""
+        self.update_flow_name_in_header()
         await self.refresh_row_highlighting()
 
     async def on_screen_resume(self, event):

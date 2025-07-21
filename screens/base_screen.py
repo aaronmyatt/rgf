@@ -79,11 +79,15 @@ class BaseScreen(Screen):
             
     async def on_screen_resume(self, event):
         """Update header with current active flow when screen becomes active"""
+        self.update_flow_name_in_header()
+
+    def update_flow_name_in_header(self):
         from app_actions import get_active_flow
 
-        active_flow = get_active_flow(self.app.db)
+        active_flow = get_active_flow(self.app.db, self.app.session_start)
         header = self.query_one(FlowHeader)
 
+        print(active_flow)
         if active_flow is None:
             header.update("No active flow")
         else:

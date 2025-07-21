@@ -64,6 +64,7 @@ class FlowScreen(BaseScreen):
 
     async def on_mount(self):
         """Load flows when screen is mounted."""
+        self.update_flow_name_in_header()
         await self.load_flows()
 
     async def on_screen_resume(self, event):
