@@ -23,5 +23,5 @@ class StepScreen(BaseScreen):
         maybe_flow_id = get_active_flow_id(self.app.db)
 
     async def on_screen_resume(self, event):
-        await super().on_screen_resume(event)
+        await super().on_screen_resume(event)  # Update header
         
