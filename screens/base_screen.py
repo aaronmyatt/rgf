@@ -76,3 +76,15 @@ class BaseScreen(Screen):
         else:
             # ai? how can we ensure headers on other screens are updated too?
             header.update(event.flow_name) 
+            
+    async def on_screen_resume(self, event):
+        """Update header with current active flow when screen becomes active"""
+        from app_actions import get_active_flow
+
+        active_flow = get_active_flow(self.app.db)
+        header = self.query_one(FlowHeader)
+
+        if active_flow is None:
+            header.update("No active flow")
+        else:
+            header.update(active_flow.name)

@@ -67,7 +67,7 @@ class FlowScreen(BaseScreen):
         await self.load_flows()
 
     async def on_screen_resume(self, event):
-        """Refresh flows when this screen becomes active again."""
+        await super().on_screen_resume(event)  # Update header
         await self.load_flows()
 
     async def load_flows(self):

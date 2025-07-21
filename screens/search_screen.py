@@ -229,7 +229,7 @@ class SearchScreen(BaseScreen):
         await self.refresh_row_highlighting()
 
     async def on_screen_resume(self, event):
-        """Update row highlighting when the active flow changes."""
+        await super().on_screen_resume(event)  # Update header
         await self.refresh_row_highlighting()
 
     async def refresh_row_highlighting(self):
