@@ -241,7 +241,7 @@ class SearchScreen(BaseScreen):
             row = self.dg.ordered_rows[idx] if idx < len(self.dg.ordered_rows) else None
             if row:
                 for cell in self.dg.get_row(row.key):
-                    cell.stylize(Style(color="white"))
+                    cell.stylize(Style(bgcolor="black", color="white"))
         # Highlight rows for matches in the active flow
         flow_id = get_active_flow_id(self.app.db, session_start=self.app.session_start)
         match_ids = get_match_ids_for_flow(self.app.db, flow_id)
