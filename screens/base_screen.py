@@ -74,4 +74,5 @@ class BaseScreen(Screen):
         if event.flow_name == None:
             header.update("No active flow")
         else:
-            header.update(event.flow_name)
+            # ai? how can we ensure headers on other screens are updated too?
+            header.update(event.flow_name) 
