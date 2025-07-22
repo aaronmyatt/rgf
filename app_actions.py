@@ -113,13 +113,13 @@ def get_flow_matches(db, flow_id: int) -> List[Tuple[Match, FlowMatch]]:
     if not flow_id:
         return []
     
-    results = db.execute("""
+    results = db.query("""
         SELECT m.*, fm.order_index, fm.id as flow_match_id
         FROM matches m
         JOIN flow_matches fm ON m.id = fm.matches_id
         WHERE fm.flows_id = ? AND m.archived = 0 AND fm.archived = 0
         ORDER BY fm.order_index ASC, fm.created_at ASC
-    """, [flow_id]).fetchall()
+    """, [flow_id])
     
     matches_with_flow_data = []
     for row in results:
