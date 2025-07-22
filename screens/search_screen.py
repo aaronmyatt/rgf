@@ -51,24 +51,6 @@ class GrepAstPreview(Static):
 
 class SearchScreen(BaseScreen):
     CSS = '''
-.h-full {
-    height: 100%;
-}
-.h-11div12 {
-    height: 91.666667%;
-}
-.h-1div12 {
-    height: 8.333333%;
-}
-.h-half {
-    height: 50%;
-}
-.h-auto {
-    height: auto;
-}
-.bg-green {
-    background: #48bb78;
-}
 '''
 
     id = "search"

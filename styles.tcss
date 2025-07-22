@@ -3,15 +3,24 @@
     dock: bottom;
 }
 
-.match-header {
-    background: $surface;
-    color: $text;
-    padding: 0 1;
-    text-style: bold;
+.h-full {
+    height: 100%;
 }
-
-.match-code {
+.h-11div12 {
+    height: 91.666667%;
+}
+.h-1div12 {
+    height: 8.333333%;
+}
+.h-half {
+    height: 50%;
+}
+.h-full {
+    height: 100%;
+}
+.h-auto {
     height: auto;
-    max-height: 10;
-    margin: 0 1 1 1;
+}
+.bg-green {
+    background: #48bb78;
 }
