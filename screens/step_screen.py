@@ -85,23 +85,25 @@ class StepScreen(BaseScreen):
         language = get_language_from_filename(match.file_name)
         
         # Create container with file info and code
-        container = Vertical()
         
         # File info header
         file_info = f"{match.file_name}:{match.line_no} (Order: {flow_match.order_index})"
-        container.mount(Label(file_info, classes="match-header"))
-        
+               
         # Syntax highlighted code
         code_area = TextArea.code_editor(
             preview_text, 
-            language=language,
+            # language=language,
             read_only=True,
             show_line_numbers=True
         )
         code_area.add_class("match-code")
-        container.mount(code_area)
-        
-        return ListItem(container)
+             
+        return ListItem(
+            Vertical(
+                Label(file_info, classes="match-header"),
+                code_area
+            )
+        )
 
     def action_refresh_matches(self):
         """Refresh the matches list"""
