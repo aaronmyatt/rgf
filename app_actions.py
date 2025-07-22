@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List, Tuple
 from dataclasses import asdict
 from db import (
     Flow, Match, FlowMatch, MatchNote, FlowHistory, FlowHistoryResult,
@@ -107,3 +107,34 @@ def get_flow_match_counts(db, flow_ids):
         GROUP BY flows_id
         """
     )
+
+def get_flow_matches(db, flow_id: int) -> List[Tuple[Match, FlowMatch]]:
+    """Get all matches for a specific flow with their FlowMatch relationship data, ordered by order_index"""
+    if not flow_id:
+        return []
+    
+    results = db.execute("""
+        SELECT m.*, fm.order_index, fm.id as flow_match_id
+        FROM matches m
+        JOIN flow_matches fm ON m.id = fm.matches_id
+        WHERE fm.flows_id = ? AND m.archived = 0 AND fm.archived = 0
+        ORDER BY fm.order_index ASC, fm.created_at ASC
+    """, [flow_id]).fetchall()
+    
+    matches_with_flow_data = []
+    for row in results:
+        # Create Match object from row data
+        match_data = {k: row[k] for k in row.keys() if k not in ['order_index', 'flow_match_id']}
+        match = Match(**match_data)
+        
+        # Create FlowMatch object
+        flow_match = FlowMatch(
+            id=row['flow_match_id'],
+            flows_id=flow_id,
+            matches_id=match.id,
+            order_index=row['order_index']
+        )
+        
+        matches_with_flow_data.append((match, flow_match))
+    
+    return matches_with_flow_data

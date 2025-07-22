@@ -2,3 +2,16 @@
     height: 6;
     dock: bottom;
 }
+
+.match-header {
+    background: $surface;
+    color: $text;
+    padding: 0 1;
+    text-style: bold;
+}
+
+.match-code {
+    height: auto;
+    max-height: 10;
+    margin: 0 1 1 1;
+}
