@@ -25,3 +25,24 @@ class StepScreen(BaseScreen):
     async def on_screen_resume(self, event):
         await super().on_screen_resume(event)  # Update header
         
+# ai? please plan how to update this file with a ListView that will present syntax highlighted FlowMatches from the database. You will need to update `app_actions` with a function to fetch flow matches from the db. Here's an example of how to use TextAreas:
+# from textual.app import App, ComposeResult
+# from textual.widgets import TextArea
+
+# TEXT = """\
+# def hello(name):
+#     print("hello" + name)
+
+# def goodbye(name):
+#     print("goodbye" + name)
+# """
+
+
+# class TextAreaExample(App):
+#     def compose(self) -> ComposeResult:
+#         yield TextArea.code_editor(TEXT, language="python")
+
+
+# app = TextAreaExample()
+# if __name__ == "__main__":
+#     app.run()
