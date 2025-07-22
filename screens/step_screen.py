@@ -1,7 +1,7 @@
 from textual.binding import Binding
 from textual.app import ComposeResult
 from textual.widgets import Static, Footer, ListView, ListItem, TextArea, Label
-from textual.containers import Vertical
+from textual.containers import Container
 from textual import events
 from pathlib import Path
 from .base_screen import BaseScreen, FlowHeader
@@ -92,17 +92,16 @@ class StepScreen(BaseScreen):
         # Syntax highlighted code
         code_area = TextArea.code_editor(
             preview_text, 
-            # language=language,
+            language='python',
             read_only=True,
-            show_line_numbers=True
+            show_line_numbers=True,
+            classes="h-auto"
         )
-        code_area.add_class("match-code")
              
         return ListItem(
-            Vertical(
-                Label(file_info, classes="match-header"),
-                code_area
-            )
+            Label(file_info),
+            code_area,
+            classes="h-auto"
         )
 
     def action_refresh_matches(self):
