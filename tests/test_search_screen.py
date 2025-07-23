@@ -20,6 +20,7 @@ def db():
 async def test_input_submission_returns_matches(db):
     app = RGApp(db)
     async with app.run_test() as pilot:
+        await pilot.press("1")
         pattern_input = app.screen.query_one('#pattern_input')
         paths_input = app.screen.query_one('#paths_input')
 
@@ -48,6 +49,7 @@ async def test_search_screen_initialization_without_args(db):
     """Test that the search screen focuses on pattern input when no args provided."""
     app = RGApp(db)
     async with app.run_test() as pilot:
+        await pilot.press("/")
         pattern_input = app.screen.query_one('#pattern_input')
         assert app.screen.focused == pattern_input
 
@@ -85,7 +87,7 @@ async def test_new_search_action(db):
         assert len(app.screen.matches) > 0
 
         # Trigger new search
-        await pilot.press("n")
+        await pilot.press("/")
 
         # Should clear matches and focus pattern input
         pattern_input = app.screen.query_one('#pattern_input')
@@ -101,6 +103,7 @@ async def test_empty_search_pattern(db):
     """Test behavior when submitting an empty search pattern."""
     app = RGApp(db)
     async with app.run_test() as pilot:
+        await pilot.press("/")
         pattern_input = app.screen.query_one('#pattern_input')
         paths_input = app.screen.query_one('#paths_input')
 
@@ -117,6 +120,7 @@ async def test_search_with_multiple_paths(db):
     """Test searching across multiple paths."""
     app = RGApp(db)
     async with app.run_test() as pilot:
+        await pilot.press("/")
         pattern_input = app.screen.query_one('#pattern_input')
         paths_input = app.screen.query_one('#paths_input')
 
@@ -135,6 +139,7 @@ async def test_should_clear_data_table_on_resubmission(db):
     """Test behavior when search returns no matches."""
     app = RGApp(db)
     async with app.run_test() as pilot:
+        await pilot.press("/")
         pattern_input = app.screen.query_one('#pattern_input')
         paths_input = app.screen.query_one('#paths_input')
 
@@ -153,6 +158,7 @@ async def test_search_no_matches(db):
     """Test behavior when search returns no matches."""
     app = RGApp(db)
     async with app.run_test() as pilot:
+        await pilot.press("/")
         pattern_input = app.screen.query_one('#pattern_input')
         paths_input = app.screen.query_one('#paths_input')
 
@@ -171,10 +177,10 @@ async def test_escape_key_unfocuses_input(db):
     """Test that escape key unfocuses input fields."""
     app = RGApp(db)
     async with app.run_test() as pilot:
-        pattern_input = app.screen.query_one('#pattern_input')
-        pattern_input.focus()
+        await pilot.press("/")
 
         await pilot.press("escape")
+        pattern_input = app.screen.query_one('#pattern_input')
         assert app.screen.focused != pattern_input
 
 
@@ -182,8 +188,7 @@ async def test_screen_navigation_blocked_when_input_focused(db):
     """Test that screen navigation keys are blocked when input is focused."""
     app = RGApp(db)
     async with app.run_test() as pilot:
-        pattern_input = app.screen.query_one('#pattern_input')
-        pattern_input.focus()
+        await pilot.press("/")
 
         # These should not trigger screen changes when input is focused
         await pilot.press("1")
@@ -192,6 +197,7 @@ async def test_screen_navigation_blocked_when_input_focused(db):
 
         # Should still be on search screen
         assert app.screen.id == "search"
+        pattern_input = app.screen.query_one('#pattern_input')
         assert pattern_input.value == "123"
 
 
@@ -199,6 +205,7 @@ async def test_preview_error_handling(db):
     """Test that preview handles errors gracefully."""
     app = RGApp(db)
     async with app.run_test() as pilot:
+        await pilot.press("/")
         # Create a scenario that might cause preview errors
         app.screen.matches = [Match("nonexistent.py", 1, "test content")]
         app.screen.update_preview(0)
@@ -293,6 +300,7 @@ async def test_cursor_navigation_on_empty_datatable_does_not_throw_error(db):
     """Test that pressing up/down on an empty data table doesn't throw CellDoesNotExist error."""
     app = RGApp(db)
     async with app.run_test() as pilot:
+        await pilot.press("/")
         # Ensure we start with an empty data table
         datatable = app.screen.query_one('#matches_table')
         assert len(datatable.rows) == 0

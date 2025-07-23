@@ -6,6 +6,8 @@ from db import get_db
 from cli import RGApp
 from waystation import UserGrep
 
+user_grep = UserGrep("test_pattern", ["."])
+
 @pytest.fixture
 def db():
     # Use a temporary file for the database
@@ -26,14 +28,22 @@ async def test_app_initialization_with_args(db):
         assert app.user_grep == user_grep
         assert app.screen.id == "search"
 
+async def test_initial_screen_is_search_when_pattern_provided_by_uesr(db):
+    app = RGApp(db, user_grep)
+    async with app.run_test() as pilot:
+        await pilot.press("escape")  # to clear initial input focus
+
+        # Start on search screen
+        assert app.screen.id == "search"
+
 async def test_screen_navigation(db):
     """Test navigation between screens using key bindings."""
     app = RGApp(db)
     async with app.run_test() as pilot:
         await pilot.press("escape")  # to clear initial input focus
 
-        # Start on search screen
-        assert app.screen.id == "search"
+        # Start on search flows
+        assert app.screen.id == "flows"
         
         # Navigate to screen 2
         await pilot.press("2")
@@ -64,9 +74,11 @@ async def test_screens_are_installed(db):
 
 async def test_unfocus_all_action(db):
     """Test the unfocus all action works on all screens."""
+    
     app = RGApp(db)
     async with app.run_test() as pilot:
         # Test on search screen
+        await pilot.press("1")
         await pilot.press("escape")
         # Should not crash and should still be on search screen
         assert app.screen.id == "search"
@@ -104,6 +116,7 @@ async def test_save_match_error_notification(db):
     """Test error notification when no match is selected."""
     app = RGApp(db)
     async with app.run_test() as pilot:
+        await pilot.press("1")
         app.screen.dg.focus()
 
         with patch.object(app, 'notify') as mock_notify:
