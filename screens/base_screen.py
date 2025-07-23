@@ -40,33 +40,38 @@ class FlowHeader(Static):
 
 class BaseScreen(Screen):
     """Base screen with common navigation functionality."""
-    
+
     COMMON_BINDINGS = [
-        Binding(key="1", action="goto_screen_1", description="Search", show=True),
-        Binding(key="2", action="goto_screen_2", description="Flows", show=True),
-        Binding(key="3", action="goto_screen_3", description="Steps", show=True),
+        Binding(key="1", action="goto_search", description="Search", show=True),
+        Binding(key="2", action="goto_flows", description="Flows", show=True),
+        Binding(key="3", action="goto_steps", description="Steps", show=True),
         Binding(key="q", action="quit", description="Quit", show=True),
+        # Add this new binding for quick search access
+        Binding(key="/", action="goto_search", description="Search", show=True),
     ]
+
+    def action_goto_search(self):
+        """Action to navigate to search screen"""
+        self.app.push_screen('search')
+
+    def action_goto_flows(self):
+        """Action to navigate to flows screen"""
+        self.app.push_screen('flows')
+
+    def action_goto_steps(self):
+        """Action to navigate to steps screen"""
+        self.app.push_screen('steps')
 
     def on_key(self, event: events.Key) -> None:
         """Common key handling with Input focus prevention."""       
         if event.key == "1":
-            self.action_goto_screen_1()
+            self.action_goto_search()
         elif event.key == "2":
-            self.action_goto_screen_2()
+            self.action_goto_flows()
         elif event.key == "3":
-            self.action_goto_screen_3()
+            self.action_goto_steps()
         elif event.key == "q":
             self.app.exit()
-
-    def action_goto_screen_1(self):
-        self.app.push_screen('search')
-
-    def action_goto_screen_2(self):
-        self.app.push_screen('flows')
-
-    def action_goto_screen_3(self):
-        self.app.push_screen('steps')
         
     def on_active_flow_changed(self, event: ActiveFlowChanged):
         """Update header text when active flow changes"""
@@ -74,7 +79,6 @@ class BaseScreen(Screen):
         if event.flow_name == None:
             header.update("No active flow")
         else:
-            # ai? how can we ensure headers on other screens are updated too?
             header.update(event.flow_name) 
             
     async def on_screen_resume(self, event):

@@ -23,7 +23,7 @@
 
 [] start on the flow screen is no pattern is passed on the cli
     [] use broot like search syntax
-        [] start search with /
+        [x] start search with /
         [] regex support
         [] exact match
     [] vim like nav h,j
@@ -38,8 +38,9 @@
     [] search in the directory of the match
     [] add parent directories
     > I'm thinking to use +/- bindings to increase/decrease the search scope
-[] start new search from anywhere with '/'?
-[] 
+[x] start new search from anywhere with '/'?
+
+[]  
 
     
 [x] flows screen

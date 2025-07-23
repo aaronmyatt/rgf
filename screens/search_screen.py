@@ -55,8 +55,7 @@ class SearchScreen(BaseScreen):
 
     id = "search"
     title = "Ripgrep > grep-ast Browser"
-    BINDINGS = BaseScreen.COMMON_BINDINGS + [
-        Binding(key="n", action="new_search", description="New Search", show=True),
+    BINDINGS = [Binding(key="/", action="new_search", description="New Search", show=True)] + BaseScreen.COMMON_BINDINGS + [
         Binding(key="s", action="save_match", description="Save Match", show=False),
         Binding(key="enter", action="save_match", description="Save Match", show=True),
         Binding(key="shift+enter", action="open_in_editor", description="Open in editor", show=True),
@@ -91,7 +90,7 @@ class SearchScreen(BaseScreen):
         if self.user_grep:
             self.matches = get_rg_matches(self.user_grep)
         else:
-            self.query_one("#pattern_input").focus()
+            self.focus_search_input()
 
         if self.matches:
             for idx, match in enumerate(self.matches):
@@ -214,6 +213,12 @@ class SearchScreen(BaseScreen):
     async def on_screen_resume(self, event):
         await super().on_screen_resume(event)  # Update header
         await self.refresh_row_highlighting()
+        print(self.matches)
+        if len(self.matches) == 0:
+            self.focus_search_input()
+
+    def focus_search_input(self):
+        self.query_one("#pattern_input").focus()
 
     async def refresh_row_highlighting(self):
         """Update row highlighting based on which matches belong to the active flow."""
