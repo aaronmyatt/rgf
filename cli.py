@@ -23,7 +23,10 @@ class RGApp(App):
         self.install_screen(screen=SearchScreen, name='search')
         self.install_screen(screen=FlowScreen, name='flows')
         self.install_screen(screen=StepScreen, name='steps')
-        self.push_screen('search')  # Start on the search screen
+
+        # Start on flows screen if no pattern, otherwise search screen
+        start_screen = 'flows' if self.user_grep is None else 'search'
+        self.push_screen(start_screen)
 
 
 if __name__ == "__main__": # pragma: no cover

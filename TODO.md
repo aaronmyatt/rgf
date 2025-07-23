@@ -8,7 +8,7 @@
     [x] keybinding (s)
     [x] show notification on save
     [x] highlight saved rows
-        [] highlight flow_matches for activated flow
+        [x] highlight flow_matches for activated flow
         [] maybe a count somewhere?
     [x] create flow if it doesn't exist
     [x] add match to flow
@@ -20,6 +20,8 @@
     [] use `@` to search for patterns in all notes
     [] use `#` to search for patterns in all tags
     [] use `*` to search for patterns in all files -->
+
+[] start on the flow screen is no pattern is passed on the cli
     [] use broot like search syntax
         [] start search with /
         [] regex support
