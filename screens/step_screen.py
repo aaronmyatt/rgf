@@ -7,7 +7,7 @@ from pathlib import Path
 from .base_screen import BaseScreen, FlowHeader
 from app_actions import get_active_flow_id, get_flow_matches
 from db import Match, FlowMatch
-from waystation import get_grep_ast_preview
+from waystation import get_grep_ast_preview, get_plain_lines_from_file
 
 
 def get_language_from_filename(filename: str) -> str:
@@ -81,18 +81,16 @@ class StepScreen(BaseScreen):
     def create_match_list_item(self, match: Match, flow_match: FlowMatch) -> ListItem:
         """Create a ListItem with syntax-highlighted code for a match"""
         # Get context around the match using existing waystation function
-        preview_text = get_grep_ast_preview(match)
+        preview_text = get_plain_lines_from_file(match)
         language = get_language_from_filename(match.file_name)
-        
-        # Create container with file info and code
-        
+              
         # File info header
         file_info = f"{match.file_name}:{match.line_no} (Order: {flow_match.order_index})"
                
         # Syntax highlighted code
         code_area = TextArea.code_editor(
             preview_text, 
-            language='python',
+            language=language,
             read_only=True,
             show_line_numbers=True,
             classes="h-auto"

@@ -62,16 +62,7 @@ def get_grep_ast_preview(match: Match):
         if lines:
             return lines
         try:
-            with open(path, 'r') as f:
-                lines = f.readlines()
-                idx = match.line_no - 1
-                context = []
-                if idx > 0:
-                    context.append(f"{lines[idx-1].rstrip()}")
-                context.append(f"{lines[idx].rstrip()}")
-                if idx + 1 < len(lines):
-                    context.append(f"{lines[idx+1].rstrip()}")
-                return "\n".join(context)
+            return get_plain_lines_from_file(match)
         except Exception as e:
             print(f"Error reading file {match.file_path}: {e}")
             return f"<no preview>"
@@ -115,3 +106,30 @@ def process_filename(filename, args):
     tc.add_lines_of_interest(loi)
     tc.add_context()
     return tc.format()
+
+def get_plain_lines_from_file(match, context_lines=1):
+    """Get matching line with surrounding context from file.
+
+    Args:
+        match: Match object containing file info
+        context_lines: Number of lines to show before/after match (default: 1)
+    """
+    path = Path(match.file_path).absolute()
+
+    with open(path, 'r') as f:
+        lines = f.readlines()
+        idx = match.line_no - 1
+        context = []
+
+        # Get lines before the match
+        for i in range(max(0, idx - context_lines), idx):
+            context.append(f"{lines[i].rstrip()}")
+
+        # Add the matching line itself
+        context.append(f"{lines[idx].rstrip()}")
+
+        # Get lines after the match
+        for i in range(idx + 1, min(len(lines), idx + context_lines + 1)):
+            context.append(f"{lines[i].rstrip()}")
+
+        return "\n".join(context)

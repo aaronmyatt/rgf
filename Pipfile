@@ -11,17 +11,18 @@ test = "python -m pytest --ff --pdb --pdbcls=IPython.terminal.debugger:TerminalP
 fail = "python -m pytest --ff -x"
 
 [packages]
-textual-dev = "*"
 sqlite-utils = "*"
-pytest = "*"
-pytest-cov = "*"
-pytest-asyncio = "*"
-ipython = "*"
-ipdb = "*"
 grep-ast = "*"
 textual = {extras = ["syntax"], version = "*"}
+tree-sitter = "<0.25.0"
 
 [dev-packages]
+ipython = "*"
+ipdb = "*"
+pytest = "*"
+pytest-asyncio = "*"
+pytest-cov = "*"
+textual-dev = "*"
 
 [requires]
 python_version = "3.13"
