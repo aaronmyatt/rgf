@@ -385,3 +385,25 @@ async def test_match_highlighting_changes_with_active_flow(db):
         # TEST WILL FAIL HERE - row not re-highlighted for Flow A
         for cell in datatable.get_row(row_key):
             assert any(["green" in str(span.style) for span in cell[0].spans]), "Row should be highlighted again when original flow is active"
+
+@pytest.mark.asyncio
+async def test_regex_search(db):
+    """Test that regex patterns work in search"""
+    # Setup regex pattern that matches Python function definitions
+    regex_pattern = r"def\s+\w+\s*\("
+    user_grep = UserGrep(regex_pattern, ["test_data/sample_code.py"])
+
+    app = RGApp(db, user_grep)
+    async with app.run_test() as pilot:
+        await pilot.pause(0.1)  # Wait for search to complete
+
+        # Verify matches were found
+        search_screen = app.screen
+        assert len(search_screen.matches) > 0
+
+        # Verify at least one match looks like a function definition
+        has_function_def = any(
+            "def " in match.line and "(" in match.line
+            for match in search_screen.matches
+        )
+        assert has_function_def, "No function definitions found with regex"
