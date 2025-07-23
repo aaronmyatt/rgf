@@ -81,7 +81,7 @@ class StepScreen(BaseScreen):
     def create_match_list_item(self, match: Match, flow_match: FlowMatch) -> ListItem:
         """Create a ListItem with syntax-highlighted code for a match"""
         # Get context around the match using existing waystation function
-        preview_text = get_plain_lines_from_file(match)
+        preview_text = get_plain_lines_from_file(match, 3)
         language = get_language_from_filename(match.file_name)
               
         # File info header

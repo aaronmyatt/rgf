@@ -21,12 +21,12 @@
     [] use `#` to search for patterns in all tags
     [] use `*` to search for patterns in all files -->
 
-[] start on the flow screen is no pattern is passed on the cli
-    [] use broot like search syntax
-        [x] start search with /
-        [] regex support
-        [] exact match
-    [] vim like nav h,j
+[x] start on the flow screen is no pattern is passed on the cli
+[x] use broot like search syntax
+    [x] start search with /
+    [x] regex support (added a test to verify)
+    [-] exact match
+[] vim like nav h,j
 [] track which git project the flow is from
 [] track the last commit hash at the time of saving the match
     [] check whether the match is out of sync if hash has changed
