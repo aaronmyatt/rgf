@@ -6,6 +6,7 @@ from app_actions import get_active_flow_id
 from db import get_db
 from cli import RGApp
 from waystation import UserGrep, Match
+from textual.widgets import ListView
 
 @pytest.fixture
 def db():
@@ -341,18 +342,20 @@ async def test_match_highlighting_changes_with_active_flow(db):
     user_grep = UserGrep("def", ["test_data/"])
     app = RGApp(db, user_grep)
 
-    async with app.run_test() as pilot:
+    def get_row(app):
         datatable = app.screen.query_one('#matches_table')
         datatable.focus()
-
-        # Save first match to Flow A
-        await pilot.press("s")
         row_idx = datatable.cursor_coordinate.row
         row_key = datatable.ordered_rows[row_idx].key
+        return datatable.get_row(row_key)
 
+    async with app.run_test() as pilot:
+        first_match = get_row(app).copy()
+        # Save first match to Flow A
+        await pilot.press("s")
+        
         # Verify row is highlighted for Flow A
-        for cell in datatable.get_row(row_key):
-            assert any(["green" in str(span.style) for span in cell[0].spans]), "Row should be highlighted after saving"
+        assert any(["black on green" == cell.style for cell in first_match]), "Row should be highlighted after saving"
 
         # Create Flow B
         await pilot.press("2")  # Go to FlowScreen
@@ -361,30 +364,33 @@ async def test_match_highlighting_changes_with_active_flow(db):
         name_input.value = "Flow B"
         await pilot.press("enter")  # Submit new flow
 
+        list_view = app.screen.query_one(ListView)
+        list_view.focus()
         # Activate Flow B
-        await pilot.press("enter")  # Select new flow
-        await pilot.press("a")  # Activate flow
+        await pilot.press("down")
+        await pilot.press("down")
+        await pilot.press("enter")
 
         # Return to SearchScreen
         await pilot.press("1")
 
-        # TEST WILL FAIL HERE - row still highlighted for Flow A
-        for cell in datatable.get_row(row_key):
-            assert any(["green" not in str(span.style) for span in cell[0].spans]), "Row should NOT be highlighted for different flow"
-
+        new_match = get_row(app).copy()
+        assert any(["white on black" == cell.style for cell in new_match]), "Row should not highlighted after switching view"
         # Return to FlowScreen and activate Flow A again
         await pilot.press("2")
-        flows_list = app.screen.query_one("#flows_list")
-        flows_list.focus()
-        await pilot.press("up")  # Select Flow A
-        await pilot.press("a")  # Activate Flow A
+        list_view = app.screen.query_one(ListView)
+        list_view.focus()
+        await pilot.press("down")
+        # Activate Flow B
+        await pilot.press("enter")  # Activate Flow A
 
         # Return to SearchScreen
         await pilot.press("1")
 
-        # TEST WILL FAIL HERE - row not re-highlighted for Flow A
-        for cell in datatable.get_row(row_key):
-            assert any(["green" in str(span.style) for span in cell[0].spans]), "Row should be highlighted again when original flow is active"
+        previous_match_again = get_row(app)
+        assert any(["black on green" == cell.style for cell in previous_match_again]), "Row should be highlighted again when original flow is active"
+        assert new_match[2].plain == previous_match_again[2].plain
+        assert first_match[2].plain == previous_match_again[2].plain
 
 @pytest.mark.asyncio
 async def test_regex_search(db):

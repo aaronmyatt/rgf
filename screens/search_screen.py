@@ -23,6 +23,15 @@ def get_match_ids_for_flow(db, flow_id):
     ).fetchall()
     return set(row[0] for row in rows)
 
+def get_matches_for_flow(db, flow_id):
+    """Return a set of match IDs for the given flow_id."""
+    if not flow_id:
+        return set()
+    rows = db.query(
+        "SELECT * FROM flow_matches fm, matches m WHERE flows_id = ? AND fm.matches_id = m.id", (flow_id,)
+    )
+    return rows
+
 class UserGrepInput(Container):
     """
     Custom Input widget for UserGrep pattern input.
@@ -60,8 +69,6 @@ class SearchScreen(BaseScreen):
         Binding(key="enter", action="save_match", description="Save Match", show=True),
         Binding(key="shift+enter", action="open_in_editor", description="Open in editor", show=True),
         Binding(key="escape", action="unfocus_all", description="Unfocus", show=True),
-        Binding(key="up", action="cursor_up", description="Cursor Up", show=False),
-        Binding(key="down", action="cursor_down", description="Cursor Down", show=False),
     ]
 
     def __init__(self, user_grep: UserGrep = None):
@@ -93,11 +100,19 @@ class SearchScreen(BaseScreen):
             self.focus_search_input()
 
         if self.matches:
-            for idx, match in enumerate(self.matches):
-                self.dg.add_row(Text(match.file_name), Text(str(match.line_no)), Text(match.line), key=idx)
+            for match in self.matches:
+                self.dg.add_row(Text(match.file_name), Text(str(match.line_no)), Text(match.line))
             self.dg.focus()
             self.dg.cursor_coordinate = 0, 0
             self.update_preview(0)
+
+            flow_id = get_active_flow_id(self.app.db, session_start=self.app.session_start)
+            saved_matches = get_matches_for_flow(self.app.db, flow_id)
+            lines = [match.get('line') for match in saved_matches]
+            self.dg.sort(key=lambda m: (
+                # Primary sort: saved matches first (0) vs unsaved (1)
+                0 if m[2].plain in lines else 1
+            ))
         else:  # No matches found
             self.update_preview(0)
         await self.refresh_row_highlighting()
@@ -110,28 +125,18 @@ class SearchScreen(BaseScreen):
         await self.on_mount()
         await self.refresh_row_highlighting()
 
-    def update_preview(self, idx):
+    def update_preview(self, match):
         try:
-            match = self.matches[idx]
             self.preview.update_preview(match)
         except Exception as e:
             self.preview.update_preview(Match("<no preview>", 0, str(e)))
 
-    def action_cursor_up(self):
-        cursor_coordinate = self.dg.cursor_coordinate
+    def on_data_table_row_highlighted(self, event):
+        if not event.row_key: return
         try:
-            cell_key = self.dg.coordinate_to_cell_key(cursor_coordinate)
-            row_key, _ = cell_key
-            self.update_preview(row_key.value - 1)
-        except CellDoesNotExist:
-            """likely an empty table"""
-
-    def action_cursor_down(self):
-        cursor_coordinate = self.dg.cursor_coordinate
-        try:
-            cell_key = self.dg.coordinate_to_cell_key(cursor_coordinate)
-            row_key, _ = cell_key
-            self.update_preview(row_key.value + 1)
+            row = self.dg.get_row(event.row_key)
+            match = next((match for match in self.matches if match.file_name == row[0].plain and match.line_no == int(row[1].plain) and match.line == row[2].plain), None)
+            self.update_preview(match)
         except CellDoesNotExist:
             """likely an empty table"""
 
@@ -146,10 +151,6 @@ class SearchScreen(BaseScreen):
                 return
         elif event.key == "enter" and self.focused == self.dg:
             self.action_save_match()
-        elif event.key == "up":
-            self.action_cursor_up()
-        elif event.key == "down":
-            self.action_cursor_down()
         elif event.key == "escape":
             self.action_unfocus_all()
     
@@ -213,7 +214,6 @@ class SearchScreen(BaseScreen):
     async def on_screen_resume(self, event):
         await super().on_screen_resume(event)  # Update header
         await self.refresh_row_highlighting()
-        print(self.matches)
         if len(self.matches) == 0:
             self.focus_search_input()
 
@@ -224,32 +224,15 @@ class SearchScreen(BaseScreen):
         """Update row highlighting based on which matches belong to the active flow."""
         if not hasattr(self, "dg") or not self.dg or not hasattr(self, "matches"):
             return
-        # Clear all row highlighting
-        for idx, match in enumerate(self.matches):
-            row = self.dg.ordered_rows[idx] if idx < len(self.dg.ordered_rows) else None
-            if row:
-                for cell in self.dg.get_row(row.key):
-                    cell.stylize(Style(bgcolor="black", color="white"))
-        # Highlight rows for matches in the active flow
+        
+        # TODO: find a more sensible way to clear these previous match colours
+        # probably stop when we find the first row that is not green?
+        for row in self.dg.ordered_rows:
+            for cell in self.dg.get_row(row.key):
+                cell.style = 'white on black'
+
         flow_id = get_active_flow_id(self.app.db, session_start=self.app.session_start)
-        match_ids = get_match_ids_for_flow(self.app.db, flow_id)
-        # We need to know the match id for each match in self.matches
-        # Assume that Match has a .id attribute if it was saved, otherwise None
-        # We'll try to look up the match id in the DB by file_path, line, etc if not present
-        for idx, match in enumerate(self.matches):
-            # Try to get match id from DB if not present
-            match_id = getattr(match, "id", None)
-            if match_id is None:
-                # Try to look up by file_path, line, etc
-                row = self.app.db.execute(
-                    "SELECT id FROM matches WHERE file_path = ? AND line_no = ? AND line = ?",
-                    (getattr(match, "file_path", getattr(match, "filename", "")), getattr(match, "line_no", 0), match.line)
-                ).fetchone()
-                if row:
-                    match_id = row[0]
-                    match.id = match_id
-            if match_id in match_ids:
-                row = self.dg.ordered_rows[idx] if idx < len(self.dg.ordered_rows) else None
-                if row:
-                    for cell in self.dg.get_row(row.key):
-                        cell.stylize(Style(bgcolor="green", color="black"))
+        saved_matches = get_matches_for_flow(self.app.db, flow_id)
+        for row in self.dg.ordered_rows[:len(list(saved_matches))]:
+                for cell in self.dg.get_row(row.key):
+                    cell.style = 'black on green'

@@ -135,4 +135,5 @@ async def test_save_match_causes_saved_row_to_be_highlighted(db):
         app.screen.dg.focus()
         await app.screen.action_save_match()
         row = app.screen.dg.ordered_rows[0]
-        assert any([span for span in app.screen.dg.get_row(row.key)[0].spans if "green" in str(span.style)])
+        real_row = app.screen.dg.get_row(row.key)
+        assert all(['black on green' == cell.style for cell in real_row])

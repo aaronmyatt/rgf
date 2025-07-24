@@ -58,9 +58,9 @@
 [x] BUG: match count does not update on flow_screen after adding new matches
 [x] BUG: match highlight (bg green) does not update (or clear) when changing flow
 
-[] flow/steps (singular) screen
-[] rename screen
-[] list FlowMatches
+[x] flow/steps (singular) screen
+[x] rename screen
+[x] list FlowMatches
 [] Add title/notes to matches
 [x] BUG: fix datatable throwing when the same rows are added. How can we defend against it? Always clear the table on input submission? Or iterate through existing rows for rows with the same key/id?
 
@@ -72,3 +72,4 @@
     [] webpage
 
 [] exclude file/pattern from results moving forward
+[] move Matches to the top of the datatable

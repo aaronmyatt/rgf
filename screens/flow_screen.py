@@ -179,6 +179,7 @@ class FlowScreen(BaseScreen):
 
     def action_new_flow(self):
         """Create a new flow."""
+        self.selected_flow = None
         new_flow = Flow(name="", description="")
         overlay = FlowEditOverlay(new_flow)
         self.mount(overlay)

@@ -91,7 +91,6 @@ class BaseScreen(Screen):
         active_flow = get_active_flow(self.app.db, self.app.session_start)
         header = self.query_one(FlowHeader)
 
-        print(active_flow)
         if active_flow is None:
             header.update("No active flow")
         else:
