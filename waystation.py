@@ -133,3 +133,26 @@ def get_plain_lines_from_file(match, context_lines=1):
             context.append(f"{lines[i].rstrip()}")
 
         return "\n".join(context)
+
+def get_language_from_filename(filename: str) -> str:
+    """Determine syntax highlighting language from file extension"""
+    ext = Path(filename).suffix.lower()
+    language_map = {
+        '.py': 'python',
+        '.js': 'javascript',
+        '.ts': 'typescript',
+        '.html': 'html',
+        '.css': 'css',
+        '.sql': 'sql',
+        '.json': 'json',
+        '.yaml': 'yaml',
+        '.yml': 'yaml',
+        '.md': 'markdown',
+        '.sh': 'bash',
+        '.rs': 'rust',
+        '.go': 'go',
+        '.java': 'java',
+        '.cpp': 'cpp',
+        '.c': 'c',
+    }
+    return language_map.get(ext, 'text')

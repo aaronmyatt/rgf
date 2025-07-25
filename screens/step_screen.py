@@ -7,31 +7,7 @@ from pathlib import Path
 from .base_screen import BaseScreen, FlowHeader
 from app_actions import get_active_flow_id, get_flow_matches
 from db import Match, FlowMatch
-from waystation import get_grep_ast_preview, get_plain_lines_from_file
-
-
-def get_language_from_filename(filename: str) -> str:
-    """Determine syntax highlighting language from file extension"""
-    ext = Path(filename).suffix.lower()
-    language_map = {
-        '.py': 'python',
-        '.js': 'javascript',
-        '.ts': 'typescript',
-        '.html': 'html',
-        '.css': 'css',
-        '.sql': 'sql',
-        '.json': 'json',
-        '.yaml': 'yaml',
-        '.yml': 'yaml',
-        '.md': 'markdown',
-        '.sh': 'bash',
-        '.rs': 'rust',
-        '.go': 'go',
-        '.java': 'java',
-        '.cpp': 'cpp',
-        '.c': 'c',
-    }
-    return language_map.get(ext, 'text')
+from waystation import get_grep_ast_preview, get_plain_lines_from_file, get_language_from_filename
 
 
 class StepScreen(BaseScreen):
