@@ -28,3 +28,18 @@
 ListItem {
     padding: 1 0;
 }
+
+FlowHeader {
+    dock: top;
+    height: 2;
+}
+Header {
+    dock: none;
+    width: 100%;
+    background: $panel;
+    color: $foreground;
+    height: 1;
+}
+Header.-tall {
+    height: 3;
+}
