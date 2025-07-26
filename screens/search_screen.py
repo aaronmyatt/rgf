@@ -76,7 +76,24 @@ class SearchScreen(BaseScreen):
         Binding(key="s", action="save_match", description="Save Match", show=False),
         Binding(key="enter", action="save_match", description="Save Match", show=True, priority=True),
         Binding(key="shift+enter", action="open_in_editor", description="Open in editor", show=True),
+        Binding(key="j", action="cursor_down", show=False),
+        Binding(key="k", action="cursor_up", show=False),
+        # Binding(key="ctrl+f", action="page_down", show=False),
+        # Binding(key="ctrl+b", action="page_up", show=False),
+        # Binding(key="ctrl+n", action="cursor_down", show=False),
+        # Binding(key="ctrl+p", action="cursor_up", show=False),
+        # Binding(key="ctrl+v", action="page_down", show=False),
+        # Binding(key="meta+v", action="page_up", show=False),
     ]
+
+
+    # TODO: better create SearchDataTable to override all these
+    def action_cursor_up(self):
+        self.dg.action_cursor_up()
+
+    def action_cursor_down(self):
+        self.dg.action_cursor_down()
+
 
     def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
         """Hide common bindings when inputs are focused"""
