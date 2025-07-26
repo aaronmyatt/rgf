@@ -26,7 +26,7 @@
     [x] start search with /
     [x] regex support (added a test to verify)
     [-] exact match
-[] vim like nav h,j
+[x] vim like nav h,j
 [] track which git project the flow is from
 [] track the last commit hash at the time of saving the match
     [] check whether the match is out of sync if hash has changed

@@ -53,6 +53,10 @@ ListView > .selected {
     async def on_mount(self):
         self.update_flow_name_in_header()
         await self.load_flow_matches()
+        # TODO: focus the first list item so two "down" key pressed are not required to start navigating
+        # first_match = self.query_one(ListItem)
+        # first_match.focus()
+        # print(first_match)
 
     async def on_screen_resume(self, event):
         await super().on_screen_resume(event)
@@ -202,7 +206,7 @@ ListView > .selected {
         new_index = max(0, min(len(self.flow_matches) - 1, self._selected_index + direction))
         if new_index != self._selected_index:
             self._selected_index = new_index
-            self.run_worker(self._refresh_list_view())
+            # self.run_worker(self._refresh_list_view())
 
     def initialize_flow_match_order(self):
         try:
