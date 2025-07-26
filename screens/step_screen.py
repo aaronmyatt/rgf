@@ -1,6 +1,7 @@
 from textual.binding import Binding
 from textual.app import ComposeResult
-from textual.widgets import Footer, ListView, ListItem, TextArea, Label, Input, Tabs, Tab, Button, Container
+from textual.widgets import Footer, ListView, ListItem, TextArea, Label, Input, Tabs, Tab, Button
+from textual.containers import Container, Horizontal
 from textual import events
 from .base_screen import BaseScreen, FlowHeader
 from app_actions import get_active_flow_id, get_flow_matches
@@ -13,8 +14,8 @@ class MatchNoteOverlay(Container):
     def __init__(self, match: Match):
         super().__init__()
         self.match = match
-        self.title_input = Input(placeholder="Title", id="title_input")
-        self.note_input = TextArea(placeholder="Note", id="note_input", language="markdown")
+        self.title_input = Input(id="title_input")
+        self.note_input = TextArea(id="note_input", language="markdown")
         
     def compose(self) -> ComposeResult:
         yield Label(f"Add Note: {self.match.file_name}:{self.match.line_no}")
@@ -22,8 +23,9 @@ class MatchNoteOverlay(Container):
         yield self.title_input
         yield Label("Note:")
         yield self.note_input
-        yield Button("Save", variant="primary", id="save")
-        yield Button("Cancel", variant="error", id="cancel")
+        with Horizontal():
+            yield Button("Save", variant="primary", id="save")
+            yield Button("Cancel", variant="error", id="cancel")
         
     def on_mount(self):
         self.title_input.focus()
@@ -50,7 +52,6 @@ class StepScreen(BaseScreen):
     MatchNoteOverlay {
         background: $background;
         border: $primary;
-        border-width: 1;
         width: 80%;
         height: auto;
         padding: 1;
