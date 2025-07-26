@@ -27,6 +27,26 @@ ListView > .selected {
         super().__init__(**kwargs)
         self.flow_matches = []
         self._selected_index = 0  # Track currently selected item
+        self.editing_flow = False  # New state flag
+
+    def action_edit_flow(self):
+        """Show edit overlay for flow editing"""
+        self.editing_flow = True
+        # Show edit UI components here
+
+    def action_cancel_edit(self):
+        self.editing_flow = False
+        # Hide edit UI components here
+
+    def action_save_edit(self):
+        self.editing_flow = False
+        # Save changes here
+
+    def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
+        """Hide common bindings when editing flow"""
+        if self.editing_flow:
+            return action in {"cancel_edit", "save_edit"}
+        return True
     
     def compose(self) -> ComposeResult:
         yield FlowHeader()

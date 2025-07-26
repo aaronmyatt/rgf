@@ -16,6 +16,11 @@ class Words(StrEnum):
 class FlowEditOverlay(Container):
     """Overlay for editing flow details"""
     id = "flow_edit_overlay"
+
+    BINDINGS = [
+        Binding("escape", "cancel_edit", "Cancel", show=True),
+        Binding("enter", "save_edit", "Save", show=True)
+    ]
     
     def __init__(self, flow: Flow):
         super().__init__()
@@ -39,6 +44,12 @@ class FlowEditOverlay(Container):
     def on_mount(self):
         self.query_one("#flow_name_input").focus()
 
+    def action_cancel_edit(self):
+        self.remove()
+
+    def action_save_edit(self):
+        self.parent.parent.save_flow_changes()
+
 def flow_dom_id(flow):
     return 'wat'+str(hash(f"{flow.id}{flow.name}"))
 
@@ -52,6 +63,12 @@ class FlowScreen(BaseScreen):
         ("n", "new_flow", "New Flow"),
         ("d", "archive_flow", "Archive"),  # Added binding
     ]
+
+    def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
+        """Hide common bindings when edit overlay is visible"""
+        if self.query_one("#flow_edit_overlay", expect_type=None):
+            return action in {"cancel_edit", "save_edit"}
+        return True
     
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

@@ -42,7 +42,10 @@ class UserGrepInput(Container):
     width: 50%;
 }
 '''
-    BINDINGS = []
+    BINDINGS = [
+        Binding("escape", "unfocus_all", "Unfocus", show=True),
+        Binding("enter", "submit_input", "Submit", show=True)
+    ]
 
     def __init__(self, args=UserGrep("", []), **kwargs):
         super().__init__(**kwargs)
@@ -52,6 +55,12 @@ class UserGrepInput(Container):
         with Horizontal():
             yield Input(placeholder="Pattern", id="pattern_input", classes="w-half", value=self.user_grep.pattern if self.user_grep else "")
             yield Input(placeholder="Path(s) (optional, space separated)", id="paths_input", classes="w-half", value=' '.join(self.user_grep.paths) if self.user_grep else "")
+
+    def action_unfocus_all(self):
+        self.set_focus(None)
+
+    def action_submit_input(self):
+        self.parent.parent.on_input_submitted(None)
 
 
 class GrepAstPreview(Static):
@@ -72,6 +81,12 @@ class SearchScreen(BaseScreen):
         Binding(key="shift+enter", action="open_in_editor", description="Open in editor", show=True),
         Binding(key="escape", action="unfocus_all", description="Unfocus", show=True),
     ]
+
+    def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
+        """Hide common bindings when inputs are focused"""
+        if isinstance(self.focused, Input):
+            return action in {"unfocus_all", "submit_input"}
+        return True
 
     def __init__(self, user_grep: UserGrep = None):
         super().__init__()
