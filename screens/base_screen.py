@@ -41,7 +41,7 @@ class FlowHeader(Header):
 class BaseScreen(Screen):
     """Base screen with common navigation functionality."""
 
-    COMMON_BINDINGS = [
+    BINDINGS = [
         Binding(key="1", action="goto_search", description="Search", show=True),
         Binding(key="2", action="goto_flows", description="Flows", show=True),
         Binding(key="3", action="goto_steps", description="Steps", show=True),

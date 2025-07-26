@@ -1,13 +1,11 @@
 from textual.binding import Binding
 from textual.app import ComposeResult
-from textual.widgets import Static, Footer, ListView, ListItem, TextArea, Label
-from textual.containers import Container
+from textual.widgets import Footer, ListView, ListItem, TextArea, Label, Input
 from textual import events
-from pathlib import Path
 from .base_screen import BaseScreen, FlowHeader
 from app_actions import get_active_flow_id, get_flow_matches
 from db import Match, FlowMatch
-from waystation import get_grep_ast_preview, get_plain_lines_from_file, get_language_from_filename
+from waystation import get_plain_lines_from_file, get_language_from_filename
 
 
 class StepScreen(BaseScreen):
@@ -20,7 +18,6 @@ ListView > .selected {
     BINDINGS = [
         Binding("shift+up", "move_up", "Move Up", show=True),
         Binding("shift+down", "move_down", "Move Down", show=True),
-        *BaseScreen.COMMON_BINDINGS
     ]
     
     def __init__(self, **kwargs):
@@ -44,7 +41,7 @@ ListView > .selected {
 
     def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
         """Hide common bindings when editing flow"""
-        if self.editing_flow:
+        if isinstance(self.focused, Input):
             return action in {"cancel_edit", "save_edit"}
         return True
     

@@ -43,8 +43,8 @@ class UserGrepInput(Container):
 }
 '''
     BINDINGS = [
-        Binding("escape", "unfocus_all", "Unfocus", show=True),
-        Binding("enter", "submit_input", "Submit", show=True)
+        Binding("escape", "unfocus_all", "Cancel", show=True),
+        Binding("enter", "submit", "Submit", show=True, priority=True)
     ]
 
     def __init__(self, args=UserGrep("", []), **kwargs):
@@ -59,10 +59,6 @@ class UserGrepInput(Container):
     def action_unfocus_all(self):
         self.set_focus(None)
 
-    def action_submit_input(self):
-        self.parent.parent.on_input_submitted(None)
-
-
 class GrepAstPreview(Static):
     id="grep_ast_preview"
 
@@ -75,11 +71,11 @@ class SearchScreen(BaseScreen):
 
     id = "search"
     title = "Ripgrep > grep-ast Browser"
-    BINDINGS = [Binding(key="/", action="new_search", description="New Search", show=True)] + BaseScreen.COMMON_BINDINGS + [
+    BINDINGS = [
+        Binding(key="/", action="new_search", description="New Search", show=True, priority=True),
         Binding(key="s", action="save_match", description="Save Match", show=False),
-        Binding(key="enter", action="save_match", description="Save Match", show=True),
+        Binding(key="enter", action="save_match", description="Save Match", show=True, priority=True),
         Binding(key="shift+enter", action="open_in_editor", description="Open in editor", show=True),
-        Binding(key="escape", action="unfocus_all", description="Unfocus", show=True),
     ]
 
     def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
@@ -140,7 +136,6 @@ class SearchScreen(BaseScreen):
         paths = self.query_one("#paths_input").value.split()
         self.user_grep = UserGrep(pattern, paths)
         await self.on_mount()
-        await self.refresh_row_highlighting()
 
     def update_preview(self, match):
         try:
@@ -208,7 +203,8 @@ class SearchScreen(BaseScreen):
         
         self.notify(f"Match saved: {self.matches[idx].file_name} at line {self.matches[idx].line_no}")
 
-        await self.refresh_row_highlighting()
+        # TODO: we can be smarter about moving selected items to the top. This is rerendering the whole list 
+        await self.on_mount()
 
         # Notify other screens that flow data has changed (e.g., match count)
         self.post_message(FlowDataChanged())

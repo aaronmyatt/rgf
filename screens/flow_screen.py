@@ -1,13 +1,12 @@
 from enum import StrEnum
 from textual.app import ComposeResult
 from textual.widgets import Static, Footer, ListView, ListItem, Label
-from textual import events
 from textual.containers import Container, Horizontal
 from textual.widgets import Input, TextArea, Button
 from textual.binding import Binding
 from .base_screen import BaseScreen, FlowHeader, ActiveFlowChanged
 from db import Flow, list_rows, update_row
-from app_actions import activate_flow, get_flow_match_counts, archive_flow  # Add archive_flow
+from app_actions import activate_flow, get_flow_match_counts, archive_flow
 
 class Words(StrEnum):
     """Text constants for the FlowScreen."""
@@ -57,7 +56,8 @@ def flow_dom_id(flow):
 class FlowScreen(BaseScreen):
     id = "flows"
 
-    BINDINGS = BaseScreen.COMMON_BINDINGS + [
+    BINDINGS = [
+        ("enter", "activate_selected_flow", "Activate Flow"),
         ("a", "activate_selected_flow", "Activate Flow"),
         ("r", "refresh_flows", "Refresh"),
         ("e", "edit_flow", "Edit Flow"),
@@ -67,7 +67,7 @@ class FlowScreen(BaseScreen):
 
     def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
         """Hide common bindings when edit overlay is visible"""
-        if self.query_one("#flow_edit_overlay", expect_type=None):
+        if isinstance(self.focused, Input):
             return action in {"cancel_edit", "save_edit"}
         return True
     
