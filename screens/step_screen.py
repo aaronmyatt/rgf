@@ -57,21 +57,7 @@ ListView > .selected {
         
         # Fix order_index if all are 0 (new flow)
         if self.flow_matches and all(fm.order_index == 0 for _, fm in self.flow_matches):
-            try:
-                # Start transaction
-                self.app.db.execute("BEGIN TRANSACTION")
-                
-                # Update each flow_match with sequential order_index
-                for index, (_, flow_match) in enumerate(self.flow_matches):
-                    flow_match.order_index = index
-                    self._update_flow_match_order(flow_match)
-                
-                # Commit changes
-                self.app.db.execute("COMMIT")
-            except Exception as e:
-                # Rollback on error
-                self.app.db.execute("ROLLBACK")
-                self.notify(f"Failed to initialize order indices: {str(e)}", severity="error")
+            self.initialize_flow_match_order()
         
         # Now load into UI
         if not self.flow_matches:
@@ -122,27 +108,37 @@ ListView > .selected {
 
     async def _swap_items(self, index1: int, index2: int) -> None:
         """Swap two items in the list and database"""
-        # Get items to swap
-        _, flow_match1 = self.flow_matches[index1]
-        _, flow_match2 = self.flow_matches[index2]
-        
-        # Swap order indices
-        flow_match1.order_index, flow_match2.order_index = (
-            flow_match2.order_index,
-            flow_match1.order_index
-        )
-        
-        # Update database
-        self._update_flow_match_order(flow_match1)
-        self._update_flow_match_order(flow_match2)
-        
-        # Update local ordering
-        self.flow_matches[index1], self.flow_matches[index2] = (
-            self.flow_matches[index2], self.flow_matches[index1]
-        )
-        
-        # Update selection index
-        self._selected_index = index2
+        try:
+            self.app.db.execute("BEGIN TRANSACTION")
+            
+            # Get items to swap
+            _, flow_match1 = self.flow_matches[index1]
+            _, flow_match2 = self.flow_matches[index2]
+            
+            # Swap order indices
+            flow_match1.order_index, flow_match2.order_index = (
+                flow_match2.order_index,
+                flow_match1.order_index
+            )
+            
+            # Update database
+            self._update_flow_match_order(flow_match1)
+            self._update_flow_match_order(flow_match2)
+            
+            # Update local ordering
+            self.flow_matches[index1], self.flow_matches[index2] = (
+                self.flow_matches[index2], self.flow_matches[index1]
+            )
+            
+            # Update selection index
+            self._selected_index = index2
+            self.app.db.execute("COMMIT")
+        except Exception as e:
+            # update didn't workout, reload flow to ensure onscreen order is correct
+            self.app.db.execute("ROLLBACK")
+            self.notify(f"Failed to initialize order indices: {str(e)}", severity="error")
+            self.load_flow_matches()
+
 
     def _update_flow_match_order(self, flow_match: FlowMatch) -> None:
         """Update a single flow_match's order in the database"""
@@ -190,3 +186,21 @@ ListView > .selected {
         if new_index != self._selected_index:
             self._selected_index = new_index
             self.run_worker(self._refresh_list_view())
+
+    def initialize_flow_match_order(self):
+        try:
+            # Start transaction
+            self.app.db.execute("BEGIN TRANSACTION")
+            
+            # Update each flow_match with sequential order_index
+            for index, (_, flow_match) in enumerate(self.flow_matches):
+                flow_match.order_index = index
+                self._update_flow_match_order(flow_match)
+            
+            # Commit changes
+            self.app.db.execute("COMMIT")
+        except Exception as e:
+            # Rollback on error
+            self.app.db.execute("ROLLBACK")
+            self.notify(f"Failed to initialize order indices: {str(e)}", severity="error")
+        
