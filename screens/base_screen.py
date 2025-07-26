@@ -1,5 +1,5 @@
 from textual.binding import Binding
-from textual.widgets import Static
+from textual.widgets import Header
 from textual import events
 from textual.screen import Screen
 from textual.message import Message
@@ -15,7 +15,7 @@ class FlowDataChanged(Message):
     pass
 
 
-class FlowHeader(Static):
+class FlowHeader(Header):
     """Header displaying the active flow name"""
     id="flow_header"
     
@@ -75,11 +75,10 @@ class BaseScreen(Screen):
         
     def on_active_flow_changed(self, event: ActiveFlowChanged):
         """Update header text when active flow changes"""
-        header = self.query_one(FlowHeader)
         if event.flow_name == None:
-            header.update("No active flow")
+            self.title = "No active flow"
         else:
-            header.update(event.flow_name) 
+            self.title = event.flow_name
             
     async def on_screen_resume(self, event):
         """Update header with current active flow when screen becomes active"""
@@ -89,9 +88,8 @@ class BaseScreen(Screen):
         from app_actions import get_active_flow
 
         active_flow = get_active_flow(self.app.db, self.app.session_start)
-        header = self.query_one(FlowHeader)
 
         if active_flow is None:
-            header.update("No active flow")
+            self.title = "No active flow"
         else:
-            header.update(active_flow.name)
+            self.title = active_flow.name

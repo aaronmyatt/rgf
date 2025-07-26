@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 import pytest
-from textual.widgets import Static
+from textual.widgets._header import HeaderTitle
 from screens.base_screen import FlowHeader, ActiveFlowChanged, BaseScreen
 from cli import RGApp
 from db import get_db
@@ -24,18 +24,19 @@ async def test_flow_header_component(db):
         await pilot.pause()
         # Get the FlowHeader instance
         header = app.screen.query_exactly_one(FlowHeader)
+        title = header.query_exactly_one(HeaderTitle)
         
         # 1. Test initial state
         assert isinstance(header, FlowHeader)
-        assert header.renderable == "No active flow"
+        assert title.text == "No active flow"
         
         # 2. Test message handling
         flow_name = "Test Flow 123"
         app.screen.post_message(ActiveFlowChanged(flow_name))
         await pilot.pause()
-        assert header.renderable == flow_name
+        assert title.text == flow_name
         
         # 3. Test with None flow name
         app.screen.post_message(ActiveFlowChanged(None))
         await pilot.pause()
-        assert header.renderable == "No active flow"
+        assert title.text == "No active flow"

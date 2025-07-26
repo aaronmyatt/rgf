@@ -47,11 +47,11 @@
     [x] rename screen!
 [x] list flows from db
     [x] just show a datatable for now
-[] CRUD flows
+[x] CRUD flows
     [x] update/edit
     [x] create new flow (n)
-    [] archive flow (d)
-    [] bindings?
+    [x] archive flow (d)
+    [-] bindings? (dont recall what this is!)
 [] command palette to find flows
 [x] flow name / description
 

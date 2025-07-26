@@ -42,6 +42,8 @@ class UserGrepInput(Container):
     width: 50%;
 }
 '''
+    BINDINGS = []
+
     def __init__(self, args=UserGrep("", []), **kwargs):
         super().__init__(**kwargs)
         self.user_grep = args
