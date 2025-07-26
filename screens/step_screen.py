@@ -127,10 +127,11 @@ ListView > .selected {
 
     def _update_flow_match_order(self, flow_match: FlowMatch) -> None:
         """Update a single flow_match's order in the database"""
+        print(flow_match)
         self.app.db.execute(
             "UPDATE flow_matches SET order_index = ? WHERE id = ?",
             [flow_match.order_index, flow_match.id]
-        )
+        ).rowcount
 
     async def _refresh_list_view(self):
         """Refresh the list view while maintaining selection"""
