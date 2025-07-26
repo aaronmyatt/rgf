@@ -1,6 +1,6 @@
 from textual.binding import Binding
 from textual.app import ComposeResult
-from textual.widgets import Footer, ListView, ListItem, TextArea, Label, Input
+from textual.widgets import Footer, ListView, ListItem, TextArea, Label, Input, Tabs, Tab
 from textual import events
 from .base_screen import BaseScreen, FlowHeader
 from app_actions import get_active_flow_id, get_flow_matches
@@ -10,14 +10,13 @@ from waystation import get_plain_lines_from_file, get_language_from_filename
 
 class StepScreen(BaseScreen):
     CSS = """
-ListView > .selected {
-    background: $accent-lighten-1;
-}
 """
     id = "steps"
     BINDINGS = [
         Binding("shift+up", "move_up", "Move Up", show=True),
         Binding("shift+down", "move_down", "Move Down", show=True),
+
+        # ai? please add a form overlay, like `FlowEditOverlay` to add a `match_notes` to each FlowMatch, it should be triggered by pressing `e` when a listitem is highlighted. You can save it with `add_match_note` in `app_actions.py`
     ]
     
     def __init__(self, **kwargs):
@@ -47,6 +46,11 @@ ListView > .selected {
     
     def compose(self) -> ComposeResult:
         yield FlowHeader()
+        yield Tabs(
+            Tab('Search', id='Search'),
+            Tab('Flows', id='Flows'),
+            Tab('Steps', id='Steps')
+        )
         yield ListView(id="matches_list")
         yield Footer()
 
@@ -106,7 +110,7 @@ ListView > .selected {
         return ListItem(
             Label(file_info),
             code_area,
-            classes=f"h-auto {'selected' if selected else ''}"
+            classes="h-auto"
         )
 
     # ---- Reordering functionality ----
@@ -202,7 +206,7 @@ ListView > .selected {
         new_index = max(0, min(len(self.flow_matches) - 1, self._selected_index + direction))
         if new_index != self._selected_index:
             self._selected_index = new_index
-            self.run_worker(self._refresh_list_view())
+            # self.run_worker(self._refresh_list_view())
 
     def initialize_flow_match_order(self):
         try:
