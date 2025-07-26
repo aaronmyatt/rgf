@@ -55,6 +55,25 @@ ListView > .selected {
         self.flow_matches = get_flow_matches(self.app.db, flow_id)
         self._selected_index = 0  # Reset selection to top
         
+        # Fix order_index if all are 0 (new flow)
+        if self.flow_matches and all(fm.order_index == 0 for _, fm in self.flow_matches):
+            try:
+                # Start transaction
+                self.app.db.execute("BEGIN TRANSACTION")
+                
+                # Update each flow_match with sequential order_index
+                for index, (_, flow_match) in enumerate(self.flow_matches):
+                    flow_match.order_index = index
+                    self._update_flow_match_order(flow_match)
+                
+                # Commit changes
+                self.app.db.execute("COMMIT")
+            except Exception as e:
+                # Rollback on error
+                self.app.db.execute("ROLLBACK")
+                self.notify(f"Failed to initialize order indices: {str(e)}", severity="error")
+        
+        # Now load into UI
         if not self.flow_matches:
             matches_list.append(ListItem(Label("No matches in this flow.")))
             return
