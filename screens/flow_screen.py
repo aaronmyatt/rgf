@@ -1,6 +1,6 @@
 from enum import StrEnum
 from textual.app import ComposeResult
-from textual.widgets import Static, Footer, ListView, ListItem, Label
+from textual.widgets import Static, Footer, ListView, ListItem, Label, Tabs, Tab
 from textual.containers import Container, Horizontal
 from textual.widgets import Input, TextArea, Button
 from textual.binding import Binding
@@ -78,6 +78,11 @@ class FlowScreen(BaseScreen):
     
     def compose(self) -> ComposeResult:
         yield FlowHeader()
+        yield Tabs(
+            Tab('Search', id='Search'),
+            Tab('Flows', id='Flows'),
+            Tab('Steps', id='Steps')
+        )
         yield Static(Words.HEADER, classes="header")
         yield ListView(id="flows_list")
         yield Footer()

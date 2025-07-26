@@ -24,3 +24,7 @@
 .bg-green {
     background: #48bb78;
 }
+
+ListItem {
+    padding: 1 0;
+}
