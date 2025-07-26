@@ -1,6 +1,6 @@
 from textual.binding import Binding
 from textual.app import ComposeResult
-from textual.widgets import Footer, ListView, ListItem, TextArea, Label, Input, Tabs, Tab
+from textual.widgets import Footer, ListView, ListItem, TextArea, Label, Input, Tabs, Tab, Button, Container
 from textual import events
 from .base_screen import BaseScreen, FlowHeader
 from app_actions import get_active_flow_id, get_flow_matches
@@ -8,15 +8,64 @@ from db import Match, FlowMatch
 from waystation import get_plain_lines_from_file, get_language_from_filename
 
 
+class MatchNoteOverlay(Container):
+    """Overlay for adding match notes"""
+    def __init__(self, match: Match):
+        super().__init__()
+        self.match = match
+        self.title_input = Input(placeholder="Title", id="title_input")
+        self.note_input = TextArea(placeholder="Note", id="note_input", language="markdown")
+        
+    def compose(self) -> ComposeResult:
+        yield Label(f"Add Note: {self.match.file_name}:{self.match.line_no}")
+        yield Label("Title:")
+        yield self.title_input
+        yield Label("Note:")
+        yield self.note_input
+        yield Button("Save", variant="primary", id="save")
+        yield Button("Cancel", variant="error", id="cancel")
+        
+    def on_mount(self):
+        self.title_input.focus()
+        
+    def on_button_pressed(self, event: Button.Pressed):
+        if event.button.id == "cancel":
+            self.remove()
+        elif event.button.id == "save":
+            from app_actions import add_match_note
+            from db import MatchNote
+            
+            # Create and save match note
+            new_note = MatchNote(
+                match_id=self.match.id,
+                name=self.title_input.value,
+                note=self.note_input.text
+            )
+            add_match_note(self.app.db, new_note)
+            self.remove()
+            self.app.notify("Note saved successfully!")
+
 class StepScreen(BaseScreen):
     CSS = """
-"""
+    MatchNoteOverlay {
+        background: $background;
+        border: $primary;
+        border-width: 1;
+        width: 80%;
+        height: auto;
+        padding: 1;
+        layer: overlay;
+    }
+    MatchNoteOverlay Input,
+    MatchNoteOverlay TextArea {
+        width: 100%;
+    }
+    """
     id = "steps"
     BINDINGS = [
         Binding("shift+up", "move_up", "Move Up", show=True),
         Binding("shift+down", "move_down", "Move Down", show=True),
-
-        # ai? please add a form overlay, like `FlowEditOverlay` to add a `match_notes` to each FlowMatch, it should be triggered by pressing `e` when a listitem is highlighted. You can save it with `add_match_note` in `app_actions.py`
+        Binding("e", "add_match_note", "Add Note", show=True),  # New binding
     ]
     
     def __init__(self, **kwargs):
@@ -207,6 +256,17 @@ class StepScreen(BaseScreen):
         if new_index != self._selected_index:
             self._selected_index = new_index
             # self.run_worker(self._refresh_list_view())
+
+    def action_add_match_note(self):
+        """Show note overlay for the selected match"""
+        if not self.flow_matches:
+            return
+            
+        # Get the match from the selected flow_match
+        match, _ = self.flow_matches[self._selected_index]
+        overlay = MatchNoteOverlay(match)
+        self.mount(overlay)
+        overlay.title_input.focus()
 
     def initialize_flow_match_order(self):
         try:
