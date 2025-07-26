@@ -44,6 +44,8 @@ def flow_dom_id(flow):
 
 class FlowScreen(BaseScreen):
     id = "flows"
+
+    # ai? please update the key bindings with: ("d", "archive_flow", "Delete"),
     BINDINGS = BaseScreen.COMMON_BINDINGS + [
         ("a", "activate_selected_flow", "Activate Flow"),
         ("r", "refresh_flows", "Refresh"),
