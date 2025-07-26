@@ -6,7 +6,7 @@ from textual.containers import Container, Horizontal
 from textual.widgets import Input, TextArea, Button
 from .base_screen import BaseScreen, FlowHeader, ActiveFlowChanged
 from db import Flow, list_rows, update_row
-from app_actions import activate_flow, get_flow_match_counts
+from app_actions import activate_flow, get_flow_match_counts, archive_flow  # Add archive_flow
 
 class Words(StrEnum):
     """Text constants for the FlowScreen."""
@@ -45,12 +45,12 @@ def flow_dom_id(flow):
 class FlowScreen(BaseScreen):
     id = "flows"
 
-    # ai? please update the key bindings with: ("d", "archive_flow", "Delete"),
     BINDINGS = BaseScreen.COMMON_BINDINGS + [
         ("a", "activate_selected_flow", "Activate Flow"),
         ("r", "refresh_flows", "Refresh"),
         ("e", "edit_flow", "Edit Flow"),
         ("n", "new_flow", "New Flow"),
+        ("d", "archive_flow", "Archive"),  # Added binding
     ]
     
     def __init__(self, **kwargs):
@@ -225,3 +225,17 @@ class FlowScreen(BaseScreen):
             await self.load_flows()
         except Exception as e:
             self.notify(f"Error saving flow: {str(e)}", severity="error")
+
+    def action_archive_flow(self):
+        """Archive the currently selected flow."""
+        if not self.selected_flow:
+            self.notify("No flow selected to archive", severity="error")
+            return
+            
+        try:
+            archive_flow(self.app.db, self.selected_flow)
+            self.notify(f"Archived flow: {self.selected_flow.name}")
+            self.selected_flow = None
+            self.run_worker(self.load_flows())
+        except Exception as e:
+            self.notify(f"Error archiving flow: {str(e)}", severity="error")
