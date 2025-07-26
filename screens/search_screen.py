@@ -2,7 +2,7 @@ from os import system
 
 from textual.binding import Binding
 from textual.app import ComposeResult
-from textual.widgets import DataTable, Static, Input, Footer
+from textual.widgets import DataTable, Static, Input, Footer, Tabs, Tab
 from textual.widgets.data_table import CellDoesNotExist
 from textual.containers import Horizontal, Vertical, Container
 from textual import events
@@ -110,6 +110,11 @@ class SearchScreen(BaseScreen):
 
     def compose(self) -> ComposeResult:
         yield FlowHeader()
+        yield Tabs(
+            Tab('Search', id='Search'),
+            Tab('Flows', id='Flows'),
+            Tab('Steps', id='Steps')
+        )
         self.dg = DataTable(zebra_stripes=True, id="matches_table")
         self.dg.cursor_type = "row"
         self.dg.add_columns("File", "Line", "Text")

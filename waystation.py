@@ -115,24 +115,27 @@ def get_plain_lines_from_file(match, context_lines=1):
         context_lines: Number of lines to show before/after match (default: 1)
     """
     path = Path(match.file_path).absolute()
+    try:
+        with open(path, 'r') as f:
+            lines = f.readlines()
+            idx = match.line_no - 1
+            context = []
 
-    with open(path, 'r') as f:
-        lines = f.readlines()
-        idx = match.line_no - 1
-        context = []
+            # Get lines before the match
+            for i in range(max(0, idx - context_lines), idx):
+                context.append(f"{lines[i].rstrip()}")
 
-        # Get lines before the match
-        for i in range(max(0, idx - context_lines), idx):
-            context.append(f"{lines[i].rstrip()}")
+            # Add the matching line itself
+            context.append(f"{lines[idx].rstrip()}")
 
-        # Add the matching line itself
-        context.append(f"{lines[idx].rstrip()}")
+            # Get lines after the match
+            for i in range(idx + 1, min(len(lines), idx + context_lines + 1)):
+                context.append(f"{lines[i].rstrip()}")
 
-        # Get lines after the match
-        for i in range(idx + 1, min(len(lines), idx + context_lines + 1)):
-            context.append(f"{lines[i].rstrip()}")
-
-        return "\n".join(context)
+            return "\n".join(context)
+    except FileNotFoundError:
+        # Fall back to the line stored in the match
+        return match.line
 
 def get_language_from_filename(filename: str) -> str:
     """Determine syntax highlighting language from file extension"""

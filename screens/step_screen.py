@@ -1,6 +1,7 @@
 from textual.binding import Binding
 from textual.app import ComposeResult
-from textual.widgets import Footer, ListView, ListItem, TextArea, Label, Input
+from textual.widgets import Footer, ListView, ListItem, TextArea, Label, Input, Tabs, Tab, Button
+from textual.containers import Container, Horizontal
 from textual import events
 from .base_screen import BaseScreen, FlowHeader
 from app_actions import get_active_flow_id, get_flow_matches
@@ -8,16 +9,64 @@ from db import Match, FlowMatch
 from waystation import get_plain_lines_from_file, get_language_from_filename
 
 
+class MatchNoteOverlay(Container):
+    """Overlay for adding match notes"""
+    def __init__(self, match: Match):
+        super().__init__()
+        self.match = match
+        self.title_input = Input(id="title_input")
+        self.note_input = TextArea(id="note_input", language="markdown")
+        
+    def compose(self) -> ComposeResult:
+        yield Label(f"Add Note: {self.match.file_name}:{self.match.line_no}")
+        yield Label("Title:")
+        yield self.title_input
+        yield Label("Note:")
+        yield self.note_input
+        with Horizontal():
+            yield Button("Save", variant="primary", id="save")
+            yield Button("Cancel", variant="error", id="cancel")
+        
+    def on_mount(self):
+        self.title_input.focus()
+        
+    def on_button_pressed(self, event: Button.Pressed):
+        if event.button.id == "cancel":
+            self.remove()
+        elif event.button.id == "save":
+            from app_actions import add_match_note
+            from db import MatchNote
+            
+            # Create and save match note
+            new_note = MatchNote(
+                match_id=self.match.id,
+                name=self.title_input.value,
+                note=self.note_input.text
+            )
+            add_match_note(self.app.db, new_note)
+            self.remove()
+            self.app.notify("Note saved successfully!")
+
 class StepScreen(BaseScreen):
     CSS = """
-ListView > .selected {
-    background: $accent-lighten-1;
-}
-"""
+    MatchNoteOverlay {
+        background: $background;
+        border: $primary;
+        width: 80%;
+        height: auto;
+        padding: 1;
+        layer: overlay;
+    }
+    MatchNoteOverlay Input,
+    MatchNoteOverlay TextArea {
+        width: 100%;
+    }
+    """
     id = "steps"
     BINDINGS = [
         Binding("shift+up", "move_up", "Move Up", show=True),
         Binding("shift+down", "move_down", "Move Down", show=True),
+        Binding("e", "add_match_note", "Add Note", show=True),  # New binding
     ]
     
     def __init__(self, **kwargs):
@@ -47,6 +96,11 @@ ListView > .selected {
     
     def compose(self) -> ComposeResult:
         yield FlowHeader()
+        yield Tabs(
+            Tab('Search', id='Search'),
+            Tab('Flows', id='Flows'),
+            Tab('Steps', id='Steps')
+        )
         yield ListView(id="matches_list")
         yield Footer()
 
@@ -110,7 +164,7 @@ ListView > .selected {
         return ListItem(
             Label(file_info),
             code_area,
-            classes=f"h-auto {'selected' if selected else ''}"
+            classes="h-auto"
         )
 
     # ---- Reordering functionality ----
@@ -206,7 +260,17 @@ ListView > .selected {
         new_index = max(0, min(len(self.flow_matches) - 1, self._selected_index + direction))
         if new_index != self._selected_index:
             self._selected_index = new_index
-            # self.run_worker(self._refresh_list_view())
+
+    def action_add_match_note(self):
+        """Show note overlay for the selected match"""
+        if not self.flow_matches:
+            return
+            
+        # Get the match from the selected flow_match
+        match, _ = self.flow_matches[self._selected_index]
+        overlay = MatchNoteOverlay(match)
+        self.mount(overlay)
+        overlay.title_input.focus()
 
     def initialize_flow_match_order(self):
         try:
