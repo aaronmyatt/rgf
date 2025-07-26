@@ -1,6 +1,6 @@
 from textual.binding import Binding
 from textual.app import ComposeResult
-from textual.widgets import Footer, ListView, ListItem, TextArea, Label, Input, Tabs, Tab, Button
+from textual.widgets import Footer, ListView, ListItem, TextArea, Label, Input, Button
 from textual.containers import Container, Horizontal
 from textual import events
 from .base_screen import BaseScreen, FlowHeader
@@ -96,17 +96,13 @@ class StepScreen(BaseScreen):
     
     def compose(self) -> ComposeResult:
         yield FlowHeader()
-        yield Tabs(
-            Tab('Search', id='Search'),
-            Tab('Flows', id='Flows'),
-            Tab('Steps', id='Steps')
-        )
         yield ListView(id="matches_list")
         yield Footer()
 
     async def on_mount(self):
         self.update_flow_name_in_header()
         await self.load_flow_matches()
+        self.query_one(ListView).focus()
         # TODO: focus the first list item so two "down" key pressed are not required to start navigating
         # first_match = self.query_one(ListItem)
         # first_match.focus()

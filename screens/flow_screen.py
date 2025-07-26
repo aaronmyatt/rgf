@@ -1,6 +1,6 @@
 from enum import StrEnum
 from textual.app import ComposeResult
-from textual.widgets import Static, Footer, ListView, ListItem, Label, Tabs, Tab
+from textual.widgets import Footer, ListView, ListItem, Label
 from textual.containers import Container, Horizontal
 from textual.widgets import Input, TextArea, Button
 from textual.binding import Binding
@@ -78,12 +78,6 @@ class FlowScreen(BaseScreen):
     
     def compose(self) -> ComposeResult:
         yield FlowHeader()
-        yield Tabs(
-            Tab('Search', id='Search'),
-            Tab('Flows', id='Flows'),
-            Tab('Steps', id='Steps')
-        )
-        yield Static(Words.HEADER, classes="header")
         yield ListView(id="flows_list")
         yield Footer()
 
@@ -91,6 +85,7 @@ class FlowScreen(BaseScreen):
         """Load flows when screen is mounted."""
         self.update_flow_name_in_header()
         await self.load_flows()
+        self.query_one(ListView).focus()
 
     async def on_screen_resume(self, event):
         await super().on_screen_resume(event)  # Update header
@@ -111,7 +106,7 @@ class FlowScreen(BaseScreen):
                 match_counts = {row['flows_id']: row['match_count'] for row in results}
 
             # Update the ListView
-            flows_list = self.query_one("#flows_list", ListView)
+            flows_list = self.query_one(ListView)
             await flows_list.clear()
 
             if not self.flows:
@@ -132,7 +127,7 @@ class FlowScreen(BaseScreen):
 
         except Exception as e:
             # Handle database errors gracefully
-            flows_list = self.query_one("#flows_list", ListView)
+            flows_list = self.query_one(ListView)
             flows_list.clear()
             flows_list.append(ListItem(Label(f"Error loading flows: {str(e)}")))
 

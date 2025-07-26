@@ -2,12 +2,11 @@ from os import system
 
 from textual.binding import Binding
 from textual.app import ComposeResult
-from textual.widgets import DataTable, Static, Input, Footer, Tabs, Tab
+from textual.widgets import DataTable, Static, Input, Footer
 from textual.widgets.data_table import CellDoesNotExist
 from textual.containers import Horizontal, Vertical, Container
 from textual import events
 from rich.text import Text
-from rich.style import Style
 from .base_screen import BaseScreen, FlowHeader, ActiveFlowChanged, FlowDataChanged
 
 # Import shared logic from waystation.py
@@ -70,7 +69,6 @@ class SearchScreen(BaseScreen):
 '''
 
     id = "search"
-    title = "Ripgrep > grep-ast Browser"
     BINDINGS = [
         Binding(key="/", action="new_search", description="New Search", show=True, priority=True),
         Binding(key="s", action="save_match", description="Save Match", show=False),
@@ -110,11 +108,6 @@ class SearchScreen(BaseScreen):
 
     def compose(self) -> ComposeResult:
         yield FlowHeader()
-        yield Tabs(
-            Tab('Search', id='Search'),
-            Tab('Flows', id='Flows'),
-            Tab('Steps', id='Steps')
-        )
         self.dg = DataTable(zebra_stripes=True, id="matches_table")
         self.dg.cursor_type = "row"
         self.dg.add_columns("File", "Line", "Text")
@@ -123,7 +116,6 @@ class SearchScreen(BaseScreen):
             with Horizontal(classes="h-11div12"):
                 yield self.dg
                 with Vertical():
-                    yield Static("Ripgrep AST Browser", classes="header")
                     yield self.preview
             yield UserGrepInput(self.user_grep, classes="h-1div12")
         yield Footer()
@@ -131,6 +123,7 @@ class SearchScreen(BaseScreen):
     async def on_mount(self):
         if self.user_grep:
             self.matches = get_rg_matches(self.user_grep)
+            self.focus_datatable()
         else:
             self.focus_search_input()
 
@@ -254,6 +247,9 @@ class SearchScreen(BaseScreen):
 
     def focus_search_input(self):
         self.query_one("#pattern_input").focus()
+
+    def focus_datatable(self):
+        self.query_one(DataTable).focus()
 
     async def refresh_row_highlighting(self):
         """Update row highlighting based on which matches belong to the active flow."""

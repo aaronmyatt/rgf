@@ -94,12 +94,8 @@ async def test_enter_key_activates_selected_flow(db, sample_flows):
     
     app = RGApp(db)
     async with app.run_test() as pilot:
-        await pilot.press("escape")
-        await pilot.press("2")  # Navigate to FlowScreen
         assert len(app.screen.flows) == 2
-        
-        await pilot.pause()
-        
+               
         # Select first flow
         await pilot.press("down")  # Navigate to FlowScreen
         await pilot.pause()

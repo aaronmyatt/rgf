@@ -1,5 +1,6 @@
 from textual.binding import Binding
-from textual.widgets import Header
+from textual.widget import Widget
+from textual.widgets import Header, Tab, Tabs
 from textual import events
 from textual.screen import Screen
 from textual.message import Message
@@ -15,52 +16,55 @@ class FlowDataChanged(Message):
     pass
 
 
-class FlowHeader(Header):
+class FlowHeader(Widget):
     """Header displaying the active flow name"""
     id="flow_header"
-    
-    DEFAULT_CSS = '''
-    FlowHeader {
-        background: dodgerblue;
-        color: white;
-        text-align: center;
-        width: 100%;
-        padding: 1;
-    }
-    '''
-    
-    def __init__(self):
-        super().__init__("No active flow")
-        self.styles.width = "100%"
-        self.styles.text_align = "center"
-        self.styles.background = "dodgerblue"
-        self.styles.color = "white"
-        self.styles.padding = (0, 1)
+
+    def compose(self):
+        yield Header()
+        yield Tabs(
+            Tab('Search (1)', id='search'),
+            Tab('Flows (2)', id='flows'),
+            Tab('Steps (3)', id='steps'),
+            active=self.app.screen.id
+        )
 
 
 class BaseScreen(Screen):
     """Base screen with common navigation functionality."""
 
     BINDINGS = [
-        Binding(key="1", action="goto_search", description="Search", show=True),
-        Binding(key="2", action="goto_flows", description="Flows", show=True),
-        Binding(key="3", action="goto_steps", description="Steps", show=True),
+        Binding(key="1", action="goto_search", description="Search", show=False),
+        Binding(key="2", action="goto_flows", description="Flows", show=False),
+        Binding(key="3", action="goto_steps", description="Steps", show=False),
         Binding(key="q", action="quit", description="Quit", show=True),
         # Add this new binding for quick search access
         Binding(key="/", action="goto_search", description="Search", show=True),
     ]
 
-    def action_goto_search(self):
+    async def action_goto_search(self):
         """Action to navigate to search screen"""
-        self.app.push_screen('search')
+        await self.app.push_screen('search')
+        tabs = self.query(Tab)
+        tab = next(tab for tab in tabs if tab.id == 'search')
+        self.query_one(Tabs)._activate_tab(tab)
 
     def action_goto_flows(self):
         """Action to navigate to flows screen"""
         self.app.push_screen('flows')
+        tabs = self.query(Tab)
+        tab = next(tab for tab in tabs if tab.id == 'flows')
+        self.query_one(Tabs)._activate_tab(tab)
 
     def action_goto_steps(self):
         """Action to navigate to steps screen"""
         self.app.push_screen('steps')
+        tabs = self.query(Tab)
+        tab = next(tab for tab in tabs if tab.id == 'steps')
+        self.query_one(Tabs)._activate_tab(tab)
+
+    def on_tab_activated(self, event):
+        print(event)
 
     def on_key(self, event: events.Key) -> None:
         """Common key handling with Input focus prevention."""       
