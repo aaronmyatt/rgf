@@ -4,6 +4,7 @@ from textual.widgets import Static, Footer, ListView, ListItem, Label
 from textual import events
 from textual.containers import Container, Horizontal
 from textual.widgets import Input, TextArea, Button
+from textual.binding import Binding
 from .base_screen import BaseScreen, FlowHeader, ActiveFlowChanged
 from db import Flow, list_rows, update_row
 from app_actions import activate_flow, get_flow_match_counts, archive_flow  # Add archive_flow
