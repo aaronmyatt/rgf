@@ -134,26 +134,44 @@ def get_flow_match_counts(db, flow_ids):
         """
     )
 
-def get_flow_matches(db, flow_id: int) -> List[Tuple[Match, FlowMatch]]:
-    """Get all matches for a specific flow with their FlowMatch relationship data, ordered by order_index"""
+def get_flow_matches(db, flow_id: int) -> List[Tuple[Match, FlowMatch, Optional[MatchNote]]]:
+    """Get all matches for a specific flow with their note"""
     if not flow_id:
         return []
     
-    results = db.query("""
-        SELECT m.*, fm.order_index, fm.id as flow_match_id
+    # Use window function to get latest note per match
+    query = """
+        WITH latest_notes AS (
+            SELECT match_id, id, name, note, 
+                   ROW_NUMBER() OVER (PARTITION BY match_id ORDER BY created_at DESC) as rn
+            FROM match_notes
+            WHERE archived = 0
+        )
+        SELECT 
+            m.*, 
+            fm.order_index, 
+            fm.id as flow_match_id,
+            ln.id as note_id,
+            ln.name as note_name,
+            ln.note as note_content
         FROM matches m
         JOIN flow_matches fm ON m.id = fm.matches_id
-        WHERE fm.flows_id = ? AND m.archived = 0 AND fm.archived = 0
-        ORDER BY fm.order_index ASC, fm.created_at ASC
-    """, [flow_id])
+        LEFT JOIN latest_notes ln ON m.id = ln.match_id AND ln.rn = 1
+        WHERE fm.flows_id = ? 
+          AND m.archived = 0 
+          AND fm.archived = 0
+        ORDER BY fm.order_index ASC
+    """
     
-    matches_with_flow_data = []
+    results = db.query(query, [flow_id])
+    matches_data = []
+    
     for row in results:
-        # Create Match object from row data
-        match_data = {k: row[k] for k in row.keys() if k not in ['order_index', 'flow_match_id']}
+        # Create Match
+        match_data = {k: v for k, v in row.items() if k in Match.__annotations__}
         match = Match(**match_data)
         
-        # Create FlowMatch object
+        # Create FlowMatch
         flow_match = FlowMatch(
             id=row['flow_match_id'],
             flows_id=flow_id,
@@ -161,9 +179,19 @@ def get_flow_matches(db, flow_id: int) -> List[Tuple[Match, FlowMatch]]:
             order_index=row['order_index']
         )
         
-        matches_with_flow_data.append((match, flow_match))
+        # Create MatchNote if exists
+        note = None
+        if row['note_id']:
+            note = MatchNote(
+                id=row['note_id'],
+                match_id=match.id,
+                name=row['note_name'],
+                note=row['note_content']
+            )
+        
+        matches_data.append((match, flow_match, note))
     
-    return matches_with_flow_data
+    return matches_data
 
 def delete_flow_match_for_match(db, flow_id: int, match_id: int) -> bool:
     """Delete one flow_match for a given match_id in a flow, 

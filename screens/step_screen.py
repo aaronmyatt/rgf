@@ -49,6 +49,38 @@ class MatchNoteOverlay(Container):
 
 class StepScreen(BaseScreen):
     CSS = """
+    /* Add new styles */
+    .step-header {
+        margin-bottom: 1;
+    }
+    .step-number {
+        color: $accent;
+        font-weight: bold;
+        margin-right: 0.5;
+    }
+    .note-indicator {
+        color: $warning;
+        margin-left: 1;
+    }
+    .note-container {
+        background: $surface;
+        border-top: 1px dashed $accent;
+        padding: 1;
+        margin-top: 1;
+    }
+    .note-title {
+        font-weight: bold;
+        color: $text;
+        margin-bottom: 0.5;
+    }
+    .note-content {
+        background: $surface-darken-1;
+    }
+    .flow-step {
+        border-left: 3px solid $primary;
+        padding-left: 1;
+        margin: 1 0;
+    }
     MatchNoteOverlay {
         background: $background;
         border: $primary;
@@ -66,50 +98,52 @@ class StepScreen(BaseScreen):
     BINDINGS = [
         Binding("shift+up", "move_up", "Move Up", show=True),
         Binding("shift+down", "move_down", "Move Down", show=True),
-        Binding("e", "add_match_note", "Add Note", show=True),  # New binding
+        Binding("e", "add_match_note", "Add Note", show=True),
+        Binding("n", "toggle_notes", "Toggle Notes", show=True),  # New binding
     ]
     
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.flow_matches = []
-        self._selected_index = 0  # Track currently selected item
-        self.editing_flow = False  # New state flag
-
-    def action_edit_flow(self):
-        """Show edit overlay for flow editing"""
-        self.editing_flow = True
-        # Show edit UI components here
-
-    def action_cancel_edit(self):
+        self._selected_index = 0
         self.editing_flow = False
-        # Hide edit UI components here
+        self.show_notes = True  # Default to showing notes
 
-    def action_save_edit(self):
-        self.editing_flow = False
-        # Save changes here
+    def action_toggle_notes(self):
+        """Toggle note visibility globally"""
+        self.show_notes = not self.show_notes
+        if hasattr(self.app, "config"):
+            self.app.config["show_notes"] = self.show_notes
+        self.refresh_list_items()
 
-    def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
-        """Hide common bindings when editing flow"""
-        if isinstance(self.focused, Input):
-            return action in {"cancel_edit", "save_edit"}
-        return True
-    
-    def compose(self) -> ComposeResult:
-        yield FlowHeader()
-        yield ListView(id="matches_list")
-        yield Footer()
+    def refresh_list_items(self):
+        """Refresh list items with current note visibility"""
+        list_view = self.query_one("#matches_list")
+        list_view.clear()
+        
+        for idx, (match, flow_match, note) in enumerate(self.flow_matches):
+            list_view.append(
+                self.create_match_list_item(
+                    match, 
+                    flow_match,
+                    note,
+                    selected=(idx == self._selected_index)
+                )
+            )
+        
+        if self.flow_matches:
+            list_view.index = self._selected_index
 
     async def on_mount(self):
         self.update_flow_name_in_header()
         await self.load_flow_matches()
         self.query_one(ListView).focus()
-        # TODO: focus the first list item so two "down" key pressed are not required to start navigating
-        # first_match = self.query_one(ListItem)
-        # first_match.focus()
-        # print(first_match)
 
     async def on_screen_resume(self, event):
+        """Restore note visibility state when returning to screen"""
         await super().on_screen_resume(event)
+        if hasattr(self.app, "config"):
+            self.show_notes = self.app.config.get("show_notes", True)
         await self.load_flow_matches()
 
     async def load_flow_matches(self):
@@ -124,31 +158,45 @@ class StepScreen(BaseScreen):
             return
             
         self.flow_matches = get_flow_matches(self.app.db, flow_id)
-        self._selected_index = 0  # Reset selection to top
+        self._selected_index = 0
         
-        # Fix order_index if all are 0 (new flow)
-        if self.flow_matches and all(fm.order_index == 0 for _, fm in self.flow_matches):
+        if self.flow_matches and all(fm.order_index == 0 for _, fm, _ in self.flow_matches):
             self.initialize_flow_match_order()
         
-        # Now load into UI
         if not self.flow_matches:
             matches_list.append(ListItem(Label("No matches in this flow.")))
             return
             
-        for idx, (match, flow_match) in enumerate(self.flow_matches):
-            list_item = self.create_match_list_item(match, flow_match, selected=(idx == self._selected_index))
-            matches_list.append(list_item)
+        for idx, (match, flow_match, note) in enumerate(self.flow_matches):
+            matches_list.append(
+                self.create_match_list_item(
+                    match, 
+                    flow_match,
+                    note,
+                    selected=(idx == self._selected_index)
+                )
+            )
 
-    def create_match_list_item(self, match: Match, flow_match: FlowMatch, selected=False) -> ListItem:
-        """Create a ListItem with syntax-highlighted code for a match"""
-        # Get context around the match using existing waystation function
+    def create_match_list_item(
+        self, 
+        match: Match, 
+        flow_match: FlowMatch, 
+        note,
+        selected: bool = False
+    ) -> ListItem:
+        """Create a ListItem with syntax-highlighted code and note"""
+        # Step header with note indicator
+        step_num = flow_match.order_index + 1
+        header = Container(classes="step-header")
+        header.mount(Label(f"Step ", classes="step-number"))
+        header.mount(Label(f"{step_num}: {match.file_name}:{match.line_no}"))
+        
+        if note:
+            header.mount(Label("📝", classes="note-indicator"))
+        
+        # Code area
         preview_text = get_plain_lines_from_file(match, 3)
         language = get_language_from_filename(match.file_name)
-              
-        # File info header
-        file_info = f"{match.file_name}:{match.line_no} (Order: {flow_match.order_index})"
-               
-        # Syntax highlighted code
         code_area = TextArea.code_editor(
             preview_text, 
             language=language,
@@ -156,12 +204,24 @@ class StepScreen(BaseScreen):
             show_line_numbers=True,
             classes="h-auto"
         )
-             
-        return ListItem(
-            Label(file_info),
-            code_area,
-            classes="h-auto"
-        )
+        
+        # Main container
+        main_container = Container(classes="flow-step")
+        main_container.mount(header)
+        main_container.mount(code_area)
+        
+        # Note section (conditionally visible)
+        if note and self.show_notes:
+            note_container = Container(classes="note-container")
+            note_container.mount(Label(note.name, classes="note-title"))
+            note_container.mount(TextArea(
+                note.note, 
+                read_only=True, 
+                classes="note-content"
+            ))
+            main_container.mount(note_container)
+        
+        return ListItem(main_container, classes="h-auto")
 
     # ---- Reordering functionality ----
     
@@ -183,8 +243,8 @@ class StepScreen(BaseScreen):
             self.app.db.execute("BEGIN TRANSACTION")
             
             # Get items to swap
-            _, flow_match1 = self.flow_matches[index1]
-            _, flow_match2 = self.flow_matches[index2]
+            _, flow_match1, _ = self.flow_matches[index1]
+            _, flow_match2, _ = self.flow_matches[index2]
             
             # Swap order indices
             flow_match1.order_index, flow_match2.order_index = (
@@ -210,7 +270,6 @@ class StepScreen(BaseScreen):
             self.notify(f"Failed to initialize order indices: {str(e)}", severity="error")
             self.load_flow_matches()
 
-
     def _update_flow_match_order(self, flow_match: FlowMatch) -> None:
         """Update a single flow_match's order in the database"""
         self.app.db.execute(
@@ -223,11 +282,12 @@ class StepScreen(BaseScreen):
         list_view = self.query_one("#matches_list")
         await list_view.clear()
         
-        for idx, (match, flow_match) in enumerate(self.flow_matches):
+        for idx, (match, flow_match, note) in enumerate(self.flow_matches):
             list_view.append(
                 self.create_match_list_item(
                     match, 
                     flow_match,
+                    note,
                     selected=(idx == self._selected_index)
                 )
             )
@@ -261,7 +321,7 @@ class StepScreen(BaseScreen):
             return
             
         # Get the match from the selected flow_match
-        match, _ = self.flow_matches[self._selected_index]
+        match, _, _ = self.flow_matches[self._selected_index]
         overlay = MatchNoteOverlay(match)
         self.mount(overlay)
         overlay.title_input.focus()
@@ -272,7 +332,7 @@ class StepScreen(BaseScreen):
             self.app.db.execute("BEGIN TRANSACTION")
             
             # Update each flow_match with sequential order_index
-            for index, (_, flow_match) in enumerate(self.flow_matches):
+            for index, (_, flow_match, _) in enumerate(self.flow_matches):
                 flow_match.order_index = index
                 self._update_flow_match_order(flow_match)
             

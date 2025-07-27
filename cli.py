@@ -12,12 +12,13 @@ from screens import SearchScreen, FlowScreen, StepScreen
 
 class RGApp(App):
     CSS_PATH = 'styles.tcss'
-
+    
     def __init__(self, db: sqlite_utils.Database, user_grep: UserGrep = None):
         super().__init__()
         self.db = db
         self.user_grep = user_grep
-        self.session_start = datetime.now(timezone.utc) - timedelta(seconds=1)
+        self.session_start = datetime.now(timezone.utc)
+        self.config = {"show_notes": True}  # Add note visibility config
 
     def on_mount(self):
         self.install_screen(screen=SearchScreen, name='search')
