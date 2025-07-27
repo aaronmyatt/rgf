@@ -120,38 +120,48 @@ class SearchScreen(BaseScreen):
             yield UserGrepInput(self.user_grep, classes="h-1div12")
         yield Footer()
 
-    async def on_mount(self):
-        self.dg.clear()
+    def on_mount(self):
         if self.user_grep:
             self.matches = get_rg_matches(self.user_grep)
             self.focus_datatable()
         else:
             self.focus_search_input()
 
+        self.render_matches()
+
+    def render_matches(self):
+        self.dg.clear()
         if self.matches:
+            flow_id = get_active_flow_id(self.app.db, session_start=self.app.session_start)
+            saved_matches = list(get_matches_for_flow(self.app.db, flow_id))
+            lines = [match.get('line') for match in saved_matches]
+            file_paths = [match.get('file_path') for match in saved_matches]
+            self.matches = sorted(self.matches, key=lambda m: 0 if m.line in lines and m.file_path in file_paths else 1)
+
+            print(lines)
+            print(file_paths)
+            print(saved_matches)
+            print(self.matches[:len(lines)])
+
             for match in self.matches:
                 self.dg.add_row(Text(match.file_name), Text(str(match.line_no)), Text(match.line))
             self.dg.focus()
             self.dg.cursor_coordinate = 0, 0
             self.update_preview(0)
 
-            flow_id = get_active_flow_id(self.app.db, session_start=self.app.session_start)
-            saved_matches = get_matches_for_flow(self.app.db, flow_id)
-            lines = [match.get('line') for match in saved_matches]
-            self.dg.sort(key=lambda m: (
-                # Primary sort: saved matches first (0) vs unsaved (1)
-                0 if m[2].plain in lines else 1
-            ))
-            self.matches.sort(key=lambda m: 0 if m.line in lines else 1)
+            # self.dg.sort(key=lambda m: (
+            #     # Primary sort: saved matches first (0) vs unsaved (1)
+            #     0 if m[2].plain in lines else 1
+            # ))
         else:  # No matches found
             self.update_preview(0)
-        await self.refresh_row_highlighting()
+        self.refresh_row_highlighting()
 
-    async def on_input_submitted(self, event):
+    def on_input_submitted(self, event):
         pattern = self.query_one("#pattern_input").value
         paths = self.query_one("#paths_input").value.split()
         self.user_grep = UserGrep(pattern, paths)
-        await self.on_mount()
+        self.on_mount()
 
     def update_preview(self, match):
         try:
@@ -211,6 +221,7 @@ class SearchScreen(BaseScreen):
 
         idx = self.dg.cursor_coordinate.row
         flow_id = get_active_flow_id(self.app.db, session_start=self.app.session_start)     
+        
         save_match(self.app.db, self.matches[idx], flow_id=flow_id)
         if flow_id:
             """do nothing"""
@@ -226,7 +237,7 @@ class SearchScreen(BaseScreen):
         self.notify(f"Match saved: {self.matches[idx].file_name} at line {self.matches[idx].line_no}")
 
         # TODO: we can be smarter about moving selected items to the top. This is rerendering the whole list 
-        await self.on_mount()
+        self.render_matches()
 
         # Notify other screens that flow data has changed (e.g., match count)
         self.post_message(FlowDataChanged())
@@ -244,11 +255,11 @@ class SearchScreen(BaseScreen):
     async def on_active_flow_changed(self, event: ActiveFlowChanged):
         """Update row highlighting when the active flow changes."""
         self.update_flow_name_in_header()
-        await self.refresh_row_highlighting()
+        self.refresh_row_highlighting()
 
     async def on_screen_resume(self, event):
         await super().on_screen_resume(event)  # Update header
-        await self.refresh_row_highlighting()
+        self.refresh_row_highlighting()
         if len(self.matches) == 0:
             self.focus_search_input()
 
@@ -258,7 +269,7 @@ class SearchScreen(BaseScreen):
     def focus_datatable(self):
         self.query_one(DataTable).focus()
 
-    async def refresh_row_highlighting(self):
+    def refresh_row_highlighting(self):
         """Update row highlighting based on which matches belong to the active flow."""
         if not hasattr(self, "dg") or not self.dg or not hasattr(self, "matches"):
             return
@@ -271,6 +282,6 @@ class SearchScreen(BaseScreen):
 
         flow_id = get_active_flow_id(self.app.db, session_start=self.app.session_start)
         saved_matches = get_matches_for_flow(self.app.db, flow_id)
-        for row in self.dg.ordered_rows[:len(list(saved_matches))]:
+        for row in self.dg.ordered_rows[:len(set([m.get('matches_id') for m in saved_matches]))]:
                 for cell in self.dg.get_row(row.key):
                     cell.style = 'black on green'

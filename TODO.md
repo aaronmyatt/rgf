@@ -75,4 +75,7 @@
 
 [] exclude file/pattern from results moving forward
 [] move Matches to the top of the datatable
-[] BUG: selecting rows in the search screen datatable is duplicating the displayed rows
+[x] BUG: selecting rows in the search screen datatable is duplicating the displayed rows
+    - not an error, a design... 🙈
+    - we were adding the same file_no + line, but with a different order_index
+    - However, we were highlighting the count(*) of flowmatches, woops.
