@@ -1,3 +1,4 @@
+from sqlite3 import IntegrityError
 from datetime import datetime
 from typing import Optional, List, Tuple
 from dataclasses import asdict
@@ -25,29 +26,47 @@ def rename_flow(db, flow: Flow, new_name: str):
     flow.name = new_name
     update_row(db, "flows", flow.id, flow)
 
+def get_match(db, match: Match):
+    result = db.query("""
+    SELECT * FROM matches where line = ? AND file_path = ? LIMIT 1;
+    """, (match.line, match.file_path))
+    return next((Match(**match) for match in result), None)
+
 def save_match(db, match: Match, flow_id: int =None) -> int:
     """Save a new match and return its id."""
-    if flow_id:
-        match_id = insert_row(db, "matches", match)
+    order_index = 0
+
+    try:
+        try:
+            match_id = insert_row(db, "matches", match)
+        except IntegrityError:
+            existing_match = get_match(db, match)
+            match_id=existing_match.id
         
-        # Get current match count for this flow
-        count = db.execute(
-            "SELECT COUNT(*) FROM flow_matches WHERE flows_id = ? AND archived = 0",
-            [flow_id]
-        ).fetchone()[0] or 0
-        
+        if flow_id:
+            # Get current match count for this flow
+            order_index = db.execute(
+                "SELECT COUNT(*) FROM flow_matches WHERE flows_id = ? AND archived = 0",
+                [flow_id]
+            ).fetchone()[0] or 0
+        else:
+            new_flow = Flow(name=f"New Flow {datetime.now()}", description=f"Auto-created flow for line: {match.line} - in: {match.file_name}")
+            flow_id = insert_row(db, 'flows', new_flow)
+            
         # Add to end of flow with proper order_index
+        print(FlowMatch(
+            flows_id=flow_id,
+            matches_id=match_id,
+            order_index=order_index
+        ))
         insert_row(db, "flow_matches", FlowMatch(
             flows_id=flow_id,
             matches_id=match_id,
-            order_index=count
+            order_index=order_index
         ))
         return match_id
-    
-    matches_table = db['matches']
-    new_flow = Flow(name=f"New Flow {datetime.now()}", description=f"Auto-created flow for line: {match.line} - in: {match.file_name}")
-    matches_table.insert(prepare_row(match)).m2m('flows', prepare_row(new_flow), m2m_table='flow_matches', pk="id")
-    return matches_table.last_pk
+    except Exception as e:
+        print(e)
 
 def add_match_note(db, match_note: MatchNote) -> int:
     """Add a note to a match and return its id."""

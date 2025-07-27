@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS matches (
 );
 
 -- Add unique constraint to prevent duplicate matches in same location
+-- will allow multiple flows to use the same data
 CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_match_location 
 ON matches(line, file_path);
 
@@ -41,6 +42,10 @@ CREATE TABLE IF NOT EXISTS flow_matches (
     FOREIGN KEY (flows_id) REFERENCES flows(id),
     FOREIGN KEY (matches_id) REFERENCES matches(id)
 );
+
+-- I want to allow matches to exist in the same flow multiple times, but not in the same place
+CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_position_in_flow
+ON flow_matches(flows_id, matches_id, order_index);
 
 -- Table: match_notes
 CREATE TABLE IF NOT EXISTS match_notes (

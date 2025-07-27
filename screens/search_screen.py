@@ -121,6 +121,7 @@ class SearchScreen(BaseScreen):
         yield Footer()
 
     async def on_mount(self):
+        self.dg.clear()
         if self.user_grep:
             self.matches = get_rg_matches(self.user_grep)
             self.focus_datatable()
@@ -141,12 +142,12 @@ class SearchScreen(BaseScreen):
                 # Primary sort: saved matches first (0) vs unsaved (1)
                 0 if m[2].plain in lines else 1
             ))
+            self.matches.sort(key=lambda m: 0 if m.line in lines else 1)
         else:  # No matches found
             self.update_preview(0)
         await self.refresh_row_highlighting()
 
     async def on_input_submitted(self, event):
-        self.dg.clear()
         pattern = self.query_one("#pattern_input").value
         paths = self.query_one("#paths_input").value.split()
         self.user_grep = UserGrep(pattern, paths)
@@ -167,9 +168,9 @@ class SearchScreen(BaseScreen):
         except CellDoesNotExist:
             """likely an empty table"""
 
-    def on_key(self, event: events.Key) -> None:
+    async def on_key(self, event: events.Key) -> None:
         # Prevent screen switching if an Input is focused
-        super().on_key(event)
+        await super().on_key(event)
         if isinstance(self.focused, Input):
             if event.key in {"1", "2", "3"}:
                 return

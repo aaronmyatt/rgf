@@ -75,3 +75,4 @@
 
 [] exclude file/pattern from results moving forward
 [] move Matches to the top of the datatable
+[] BUG: selecting rows in the search screen datatable is duplicating the displayed rows

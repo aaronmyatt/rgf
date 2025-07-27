@@ -342,17 +342,17 @@ async def test_match_highlighting_changes_with_active_flow(db):
     user_grep = UserGrep("def", ["test_data/"])
     app = RGApp(db, user_grep)
 
-    def get_row(app):
+    def get_row(app, offset=0):
         datatable = app.screen.query_one('#matches_table')
         datatable.focus()
-        row_idx = datatable.cursor_coordinate.row
-        row_key = datatable.ordered_rows[row_idx].key
+        row_key = datatable.ordered_rows[offset].key
         return datatable.get_row(row_key)
 
     async with app.run_test() as pilot:
-        first_match = get_row(app).copy()
         # Save first match to Flow A
         await pilot.press("s")
+        await pilot.pause()
+        first_match = get_row(app).copy()
         
         # Verify row is highlighted for Flow A
         assert any(["black on green" == cell.style for cell in first_match]), "Row should be highlighted after saving"

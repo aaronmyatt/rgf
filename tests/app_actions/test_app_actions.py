@@ -2,7 +2,7 @@ import pytest
 import tempfile
 import os
 from datetime import datetime, timedelta, timezone
-from db import get_db, Flow, Match, FlowMatch, MatchNote, FlowHistory
+from db import get_db, Flow, Match, FlowMatch, MatchNote, FlowHistory, insert_row
 from app_actions import (
     get_latest_flow, new_flow, rename_flow, save_match, add_match_note, add_match_to_flow,
     archive_flow, archive_match, archive_flow_match, archive_match_note,
@@ -29,7 +29,6 @@ def db():
 def sample_flow():
     """Create a sample flow for testing."""
     return Flow(name="Test Flow", description="A test flow")
-
 
 
 # @dataclass
@@ -239,7 +238,7 @@ class TestFlowMatchOperations:
     def test_add_match_to_flow(self, db, sample_flow, sample_match, sample_flow_match):
         """Test adding a match to a flow."""
         flow_id = new_flow(db, sample_flow)
-        match_id = save_match(db, sample_match)
+        match_id = insert_row(db, 'matches', sample_match)
         
         sample_flow_match.flows_id = flow_id
         sample_flow_match.matches_id = match_id
@@ -260,7 +259,7 @@ class TestFlowMatchOperations:
     def test_archive_flow_match(self, db, sample_flow, sample_match, sample_flow_match):
         """Test archiving a flow match."""
         flow_id = new_flow(db, sample_flow)
-        match_id = save_match(db, sample_match)
+        match_id = insert_row(db, 'matches', sample_match)
         
         sample_flow_match.flow_id = flow_id
         sample_flow_match.match_id = match_id
