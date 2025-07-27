@@ -25,6 +25,10 @@ CREATE TABLE IF NOT EXISTS matches (
     archived BOOLEAN DEFAULT FALSE -- indicates if the flow is archived
 );
 
+-- Add unique constraint to prevent duplicate matches in same location
+CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_match_location 
+ON matches(line, file_path);
+
 -- Table: flow_matches
 CREATE TABLE IF NOT EXISTS flow_matches (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
