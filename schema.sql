@@ -1,6 +1,6 @@
 -- Table: flows
 CREATE TABLE IF NOT EXISTS flows (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id INTEGER PRIMARY KEY AUTOINCREMENT
     name TEXT NOT NULL,
     description TEXT,
     parent_flow_id INTEGER NULL,         -- nullable for root flows
@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS flows (
 
 -- Table: matches
 CREATE TABLE IF NOT EXISTS matches (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id INTEGER PRIMARY KEY AUTOINCREMENT
     line TEXT NOT NULL,
     file_path TEXT NOT NULL,
     file_name TEXT NOT NULL,
@@ -31,7 +31,7 @@ ON matches(line, file_path);
 
 -- Table: flow_matches
 CREATE TABLE IF NOT EXISTS flow_matches (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id INTEGER PRIMARY KEY AUTOINCREMENT
     flows_id INTEGER NOT NULL,
     matches_id INTEGER NOT NULL,
     order_index INTEGER DEFAULT 0, -- tracks order within the flow
@@ -44,7 +44,7 @@ CREATE TABLE IF NOT EXISTS flow_matches (
 
 -- Table: match_notes
 CREATE TABLE IF NOT EXISTS match_notes (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id INTEGER PRIMARY KEY AUTOINCREMENT
     match_id INTEGER NOT NULL,
     name TEXT NOT NULL,
     description TEXT,
@@ -57,7 +57,7 @@ CREATE TABLE IF NOT EXISTS match_notes (
 
 -- Table: flow_history
 CREATE TABLE IF NOT EXISTS flow_history (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id INTEGER PRIMARY KEY AUTOINCREMENT
     flow_id INTEGER NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (flow_id) REFERENCES flows(id)
