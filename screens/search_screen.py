@@ -186,7 +186,13 @@ class SearchScreen(BaseScreen):
         self.set_focus(None)
 
     def on_data_table_row_selected(self, event):
-        self.update_preview(event.row_key.value)
+        if not event.row_key: return
+        try:
+            row = self.dg.get_row(event.row_key)
+            match = next((match for match in self.matches if match.file_name == row[0].plain and match.line_no == int(row[1].plain) and match.line == row[2].plain), None)
+            self.update_preview(match)
+        except CellDoesNotExist:
+            """likely an empty table"""
 
     def action_open_in_editor(self):
         idx = self.dg.cursor_coordinate.row
