@@ -241,12 +241,11 @@ class StepScreen(BaseScreen):
     
     def on_key(self, event: events.Key) -> None:
         """Handle keyboard navigation"""
+        super().on_key(event)
         if event.key == "up":
             self._navigate_selection(-1)
         elif event.key == "down":
             self._navigate_selection(1)
-        else:
-            super().on_key(event)
     
     def _navigate_selection(self, direction: int):
         """Move selection up or down"""

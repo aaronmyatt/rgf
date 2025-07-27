@@ -29,53 +29,44 @@ class FlowHeader(Widget):
             active=self.app.screen.id
         )
 
+    async def on_click(self, event) -> None:
+        """Activate a tab that was clicked."""
+        if isinstance(event.widget, Tab):
+            await self.app.push_screen(event.widget.id)
+
 
 class BaseScreen(Screen):
     """Base screen with common navigation functionality."""
 
     BINDINGS = [
-        Binding(key="1", action="goto_search", description="Search", show=False),
-        Binding(key="2", action="goto_flows", description="Flows", show=False),
-        Binding(key="3", action="goto_steps", description="Steps", show=False),
+        Binding(key="1", action="goto_screen('search')", description="Search", show=False),
+        Binding(key="2", action="goto_screen('flows')", description="Flows", show=False),
+        Binding(key="3", action="goto_screen('steps')", description="Steps", show=False),
         Binding(key="q", action="quit", description="Quit", show=True),
         # Add this new binding for quick search access
-        Binding(key="/", action="goto_search", description="Search", show=True),
+        Binding(key="/", action="goto_screen('search')", description="Search", show=True),
     ]
 
-    async def action_goto_search(self):
+    async def action_goto_screen(self, screen: str):
         """Action to navigate to search screen"""
-        await self.app.push_screen('search')
-        tabs = self.query(Tab)
-        tab = next(tab for tab in tabs if tab.id == 'search')
+        await self.app.push_screen(screen)
+        tab = self.query_one(f"#{screen}", Tab)
         self.query_one(Tabs)._activate_tab(tab)
 
-    def action_goto_flows(self):
-        """Action to navigate to flows screen"""
-        self.app.push_screen('flows')
-        tabs = self.query(Tab)
-        tab = next(tab for tab in tabs if tab.id == 'flows')
-        self.query_one(Tabs)._activate_tab(tab)
+    # async def on_tabs_tab_activated(self, event):
+    #     await self.app.push_screen(event.tab.id)
 
-    def action_goto_steps(self):
-        """Action to navigate to steps screen"""
-        self.app.push_screen('steps')
-        tabs = self.query(Tab)
-        tab = next(tab for tab in tabs if tab.id == 'steps')
-        self.query_one(Tabs)._activate_tab(tab)
-
-    def on_tab_activated(self, event):
-        print(event)
-
-    def on_key(self, event: events.Key) -> None:
+    async def on_key(self, event: events.Key) -> None:
         """Common key handling with Input focus prevention."""       
         if event.key == "1":
-            self.action_goto_search()
+            await self.action_goto_screen('search')
         elif event.key == "2":
-            self.action_goto_flows()
+            await self.action_goto_screen('flows')
         elif event.key == "3":
-            self.action_goto_steps()
-        elif event.key == "q":
-            self.app.exit()
+            await self.action_goto_screen('steps')
+
+    async def action_quit(self):
+        await self.app.action_quit()
         
     def on_active_flow_changed(self, event: ActiveFlowChanged):
         """Update header text when active flow changes"""

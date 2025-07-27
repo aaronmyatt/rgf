@@ -163,6 +163,7 @@ class FlowScreen(BaseScreen):
 
     def on_key(self, event):
         """Activate the currently selected flow."""
+        super().on_key(event)
         if self.selected_flow and event.key == 'enter':
             try:
                 activate_flow(self.app.db, self.selected_flow.id)
