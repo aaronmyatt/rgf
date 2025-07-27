@@ -39,9 +39,6 @@
     [] add parent directories
     > I'm thinking to use +/- bindings to increase/decrease the search scope
 [x] start new search from anywhere with '/'?
-
-[]  
-
     
 [x] flows screen
     [x] rename screen!
@@ -74,7 +71,7 @@
     [] webpage
 
 [] exclude file/pattern from results moving forward
-[] move Matches to the top of the datatable
+[x] move Matches to the top of the datatable
 [x] BUG: selecting rows in the search screen datatable is duplicating the displayed rows
     - not an error, a design... 🙈
     - we were adding the same file_no + line, but with a different order_index

@@ -19,7 +19,7 @@ class UserGrep:
 def init_waystation():
     waystation_dir = Path.home() / ".waystation"
     waystation_dir.mkdir(exist_ok=True)
-    db_path = waystation_dir / "rgf.db"
+    db_path = waystation_dir / "way.db"
     schema_path = Path(__file__).parent / "schema.sql"
     db = get_db(str(db_path), str(schema_path))
     return db

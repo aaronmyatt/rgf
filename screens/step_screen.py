@@ -1,7 +1,7 @@
 from textual.binding import Binding
 from textual.app import ComposeResult
 from textual.widgets import Footer, ListView, ListItem, TextArea, Label, Input, Button
-from textual.containers import Container, Horizontal
+from textual.containers import Container, Horizontal, Vertical
 from textual import events
 from .base_screen import BaseScreen, FlowHeader
 from app_actions import get_active_flow_id, get_flow_matches
@@ -49,14 +49,13 @@ class MatchNoteOverlay(Container):
 
 class StepScreen(BaseScreen):
     CSS = """
-    /* Add new styles */
     .step-header {
+        height: 1;
         margin-bottom: 1;
     }
     .step-number {
         color: $accent;
-        font-weight: bold;
-        margin-right: 0.5;
+        margin-right: 1;
     }
     .note-indicator {
         color: $warning;
@@ -64,20 +63,20 @@ class StepScreen(BaseScreen):
     }
     .note-container {
         background: $surface;
-        border-top: 1px dashed $accent;
+        border-top: dashed $accent;
         padding: 1;
         margin-top: 1;
     }
     .note-title {
-        font-weight: bold;
         color: $text;
-        margin-bottom: 0.5;
+        margin-bottom: 1;
     }
     .note-content {
         background: $surface-darken-1;
     }
     .flow-step {
-        border-left: 3px solid $primary;
+        height: auto;
+        border-left: solid $primary;
         padding-left: 1;
         margin: 1 0;
     }
@@ -108,6 +107,11 @@ class StepScreen(BaseScreen):
         self._selected_index = 0
         self.editing_flow = False
         self.show_notes = True  # Default to showing notes
+
+    def compose(self) -> ComposeResult:
+        yield FlowHeader()
+        yield ListView(id="matches_list")
+        yield Footer()
 
     def action_toggle_notes(self):
         """Toggle note visibility globally"""
@@ -150,7 +154,7 @@ class StepScreen(BaseScreen):
         """Load matches for the active flow"""
         flow_id = get_active_flow_id(self.app.db, session_start=self.app.session_start)
         
-        matches_list = self.query_one("#matches_list", ListView)
+        matches_list = self.query_one(ListView)
         await matches_list.clear()
         
         if not flow_id:
@@ -187,13 +191,15 @@ class StepScreen(BaseScreen):
         """Create a ListItem with syntax-highlighted code and note"""
         # Step header with note indicator
         step_num = flow_match.order_index + 1
-        header = Container(classes="step-header")
-        header.mount(Label(f"Step ", classes="step-number"))
-        header.mount(Label(f"{step_num}: {match.file_name}:{match.line_no}"))
+        children = [
+            Label(f"Step ", classes="step-number"),
+            Label(f"{step_num}: {match.file_name}:{match.line_no}")
+        ]
         
         if note:
-            header.mount(Label("📝", classes="note-indicator"))
+            children.append(Label("📝", classes="note-indicator"))
         
+        header = Horizontal(*children, classes="step-header")
         # Code area
         preview_text = get_plain_lines_from_file(match, 3)
         language = get_language_from_filename(match.file_name)
@@ -206,21 +212,22 @@ class StepScreen(BaseScreen):
         )
         
         # Main container
-        main_container = Container(classes="flow-step")
-        main_container.mount(header)
-        main_container.mount(code_area)
+        main_container_children = [header, code_area]
+        
         
         # Note section (conditionally visible)
         if note and self.show_notes:
-            note_container = Container(classes="note-container")
-            note_container.mount(Label(note.name, classes="note-title"))
-            note_container.mount(TextArea(
-                note.note, 
-                read_only=True, 
-                classes="note-content"
-            ))
-            main_container.mount(note_container)
+            note_container = Vertical(
+                Label(note.name, classes="note-title"),
+                TextArea(
+                    note.note, 
+                    read_only=True, 
+                    classes="note-content h-auto"
+                ),
+                classes="note-container h-auto")
+            main_container_children.append(note_container)
         
+        main_container = Vertical(*main_container_children, classes="flow-step h-auto")
         return ListItem(main_container, classes="h-auto")
 
     # ---- Reordering functionality ----
@@ -279,7 +286,7 @@ class StepScreen(BaseScreen):
 
     async def _refresh_list_view(self):
         """Refresh the list view while maintaining selection"""
-        list_view = self.query_one("#matches_list")
+        list_view = self.query_one(ListView)
         await list_view.clear()
         
         for idx, (match, flow_match, note) in enumerate(self.flow_matches):
