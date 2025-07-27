@@ -105,6 +105,10 @@ def archive_row(db, table: str, row_id: int):
     """Set archived=True for a row by id."""
     db[table].update(row_id, {"archived": True})
 
+def _delete_row(db, table: str, row_id: int):
+    """Set archived=True for a row by id."""
+    db[table].delete(row_id)
+
 def list_rows(db, table: str, cls: Type[T], where: str = None, where_args = None) -> List[T]:
     """List rows as dataclass instances, optionally filtered by where dict."""
     rows = db[table].rows if where is None else db[table].rows_where(where, where_args)

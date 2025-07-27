@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Optional, List, Tuple
 from dataclasses import asdict
 from db import (
-    Flow, Match, FlowMatch, MatchNote, FlowHistory, FlowHistoryResult,
+    Flow, Match, FlowMatch, MatchNote, FlowHistory, FlowHistoryResult, _delete_row,
     insert_row, get_row, update_row, archive_row, prepare_row
 )
 
@@ -54,11 +54,6 @@ def save_match(db, match: Match, flow_id: int =None) -> int:
             flow_id = insert_row(db, 'flows', new_flow)
             
         # Add to end of flow with proper order_index
-        print(FlowMatch(
-            flows_id=flow_id,
-            matches_id=match_id,
-            order_index=order_index
-        ))
         insert_row(db, "flow_matches", FlowMatch(
             flows_id=flow_id,
             matches_id=match_id,
@@ -169,3 +164,24 @@ def get_flow_matches(db, flow_id: int) -> List[Tuple[Match, FlowMatch]]:
         matches_with_flow_data.append((match, flow_match))
     
     return matches_with_flow_data
+
+def delete_flow_match_for_match(db, flow_id: int, match_id: int) -> bool:
+    """Delete one flow_match for a given match_id in a flow, 
+    starting with largest order_index incases where the match
+    has been used multiple times in a flow"""
+    # Find all flow_matches for this match in the flow
+    flow_matches = db.query("""
+        SELECT id, order_index FROM flow_matches
+        WHERE flows_id = ? AND matches_id = ? AND archived = 0
+        ORDER BY order_index DESC
+        LIMIT 1
+    """, (flow_id, match_id))
+
+    if not flow_matches:
+        return False
+
+    # Delete starting with highest order_index
+    for fm in flow_matches:
+        _delete_row(db, "flow_matches", fm['id'])
+
+    return True

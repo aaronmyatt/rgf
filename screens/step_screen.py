@@ -213,7 +213,6 @@ class StepScreen(BaseScreen):
 
     def _update_flow_match_order(self, flow_match: FlowMatch) -> None:
         """Update a single flow_match's order in the database"""
-        print(flow_match)
         self.app.db.execute(
             "UPDATE flow_matches SET order_index = ? WHERE id = ?",
             [flow_match.order_index, flow_match.id]

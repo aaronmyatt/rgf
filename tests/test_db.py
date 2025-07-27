@@ -5,7 +5,7 @@ import os
 from db import (
     get_db,
     Flow, Match, FlowMatch, MatchNote,
-    insert_row, get_row, update_row, archive_row, list_rows
+    insert_row, get_row, update_row, archive_row, list_rows, prepare_row
 )
 
 @pytest.fixture
@@ -101,3 +101,9 @@ def test_get_row_not_found(db):
     # Test getting a row that doesn't exist
     assert get_row(db, "matches", 9999, Match) is None
         
+def test_prepare_row_removes_null_values():
+    prepared_row = prepare_row(Flow())
+    assert(len(prepared_row) == 2)
+
+    prepared_row = prepare_row(Flow(description='wat'))
+    assert(len(prepared_row) == 3)

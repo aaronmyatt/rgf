@@ -11,7 +11,7 @@ from .base_screen import BaseScreen, FlowHeader, ActiveFlowChanged, FlowDataChan
 
 # Import shared logic from waystation.py
 from waystation import Match, UserGrep, get_rg_matches, get_grep_ast_preview
-from app_actions import activate_flow, get_active_flow_id, get_latest_flow, save_match, get_active_flow
+from app_actions import activate_flow, delete_flow_match_for_match, get_active_flow_id, get_latest_flow, get_match, save_match, get_active_flow
 
 def get_match_ids_for_flow(db, flow_id):
     """Return a set of match IDs for the given flow_id."""
@@ -73,6 +73,7 @@ class SearchScreen(BaseScreen):
         Binding(key="/", action="new_search", description="New Search", show=True, priority=True),
         Binding(key="s", action="save_match", description="Save Match", show=False),
         Binding(key="enter", action="save_match", description="Save Match", show=True, priority=True),
+        Binding(key="d", action="delete_match", description="Remove match", show=True),
         Binding(key="shift+enter", action="open_in_editor", description="Open in editor", show=True),
         Binding(key="j", action="cursor_down", show=False),
         Binding(key="k", action="cursor_up", show=False),
@@ -129,7 +130,7 @@ class SearchScreen(BaseScreen):
 
         self.render_matches()
 
-    def render_matches(self):
+    def render_matches(self, initial_selection=0):
         self.dg.clear()
         if self.matches:
             flow_id = get_active_flow_id(self.app.db, session_start=self.app.session_start)
@@ -138,24 +139,19 @@ class SearchScreen(BaseScreen):
             file_paths = [match.get('file_path') for match in saved_matches]
             self.matches = sorted(self.matches, key=lambda m: 0 if m.line in lines and m.file_path in file_paths else 1)
 
-            print(lines)
-            print(file_paths)
-            print(saved_matches)
-            print(self.matches[:len(lines)])
-
             for match in self.matches:
                 self.dg.add_row(Text(match.file_name), Text(str(match.line_no)), Text(match.line))
-            self.dg.focus()
-            self.dg.cursor_coordinate = 0, 0
+
             self.update_preview(0)
 
             # self.dg.sort(key=lambda m: (
             #     # Primary sort: saved matches first (0) vs unsaved (1)
             #     0 if m[2].plain in lines else 1
             # ))
+            self.refresh_row_highlighting()
+            self.dg.move_cursor(row=initial_selection)
         else:  # No matches found
             self.update_preview(0)
-        self.refresh_row_highlighting()
 
     def on_input_submitted(self, event):
         pattern = self.query_one("#pattern_input").value
@@ -170,7 +166,7 @@ class SearchScreen(BaseScreen):
             self.preview.update_preview(Match("<no preview>", 0, str(e)))
 
     def on_data_table_row_highlighted(self, event):
-        if not event.row_key: return
+        if not event.row_key or not event.row_key.value: return
         try:
             row = self.dg.get_row(event.row_key)
             match = next((match for match in self.matches if match.file_name == row[0].plain and match.line_no == int(row[1].plain) and match.line == row[2].plain), None)
@@ -237,7 +233,7 @@ class SearchScreen(BaseScreen):
         self.notify(f"Match saved: {self.matches[idx].file_name} at line {self.matches[idx].line_no}")
 
         # TODO: we can be smarter about moving selected items to the top. This is rerendering the whole list 
-        self.render_matches()
+        self.render_matches(initial_selection=idx)
 
         # Notify other screens that flow data has changed (e.g., match count)
         self.post_message(FlowDataChanged())
@@ -248,8 +244,6 @@ class SearchScreen(BaseScreen):
         # clear preview
         self.preview.update("<no preview>")
         pattern_input.value = ""
-        self.matches = []
-        self.dg.clear()
         pattern_input.focus()
 
     async def on_active_flow_changed(self, event: ActiveFlowChanged):
@@ -285,3 +279,32 @@ class SearchScreen(BaseScreen):
         for row in self.dg.ordered_rows[:len(set([m.get('matches_id') for m in saved_matches]))]:
                 for cell in self.dg.get_row(row.key):
                     cell.style = 'black on green'
+
+    def action_delete_match(self):
+        """Delete currently selected match from active flow"""
+        if not self.matches:
+            self.notify("No matches available.", severity="warning")
+            return
+
+        idx = self.dg.cursor_coordinate.row
+        match = self.matches[idx]
+        flow_id = get_active_flow_id(self.app.db, session_start=self.app.session_start)
+
+        if not flow_id:
+            self.notify("No active flow selected.", severity="warning")
+            return
+
+        # Get database match ID
+        match = get_match(self.app.db, match)
+        if not match:
+            self.notify("Match not found in flow", severity="warning")
+            return
+
+        # Delete from flow
+        print(flow_id, match)
+        if delete_flow_match_for_match(self.app.db, flow_id, match.id):
+            self.notify("Match removed from flow")
+            self.render_matches()
+            self.post_message(FlowDataChanged())
+        else:
+            self.notify("Match not found in flow", severity="warning")
