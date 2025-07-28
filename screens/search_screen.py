@@ -3,7 +3,7 @@ from os import system
 from textual.binding import Binding
 from textual.app import ComposeResult
 from textual.widgets import DataTable, Static, Input, Footer
-from textual.widgets.data_table import CellDoesNotExist
+from textual.widgets.data_table import CellDoesNotExist, RowDoesNotExist
 from textual.containers import Horizontal, Vertical, Container
 from textual import events
 from rich.text import Text
@@ -142,13 +142,8 @@ class SearchScreen(BaseScreen):
             for match in self.matches:
                 self.dg.add_row(Text(match.file_name), Text(str(match.line_no)), Text(match.line))
 
+            self.screen.post_message(FlowDataChanged())
             self.update_preview(0)
-
-            # self.dg.sort(key=lambda m: (
-            #     # Primary sort: saved matches first (0) vs unsaved (1)
-            #     0 if m[2].plain in lines else 1
-            # ))
-            self.refresh_row_highlighting()
             self.dg.move_cursor(row=initial_selection)
         else:  # No matches found
             self.update_preview(0)
@@ -166,12 +161,12 @@ class SearchScreen(BaseScreen):
             self.preview.update_preview(Match("<no preview>", 0, str(e)))
 
     def on_data_table_row_highlighted(self, event):
-        if not event.row_key or not event.row_key.value: return
+        # if not event.row_key or not event.row_key.value: return
         try:
             row = self.dg.get_row(event.row_key)
             match = next((match for match in self.matches if match.file_name == row[0].plain and match.line_no == int(row[1].plain) and match.line == row[2].plain), None)
             self.update_preview(match)
-        except CellDoesNotExist:
+        except (CellDoesNotExist, RowDoesNotExist):
             """likely an empty table"""
 
     async def on_key(self, event: events.Key) -> None:
@@ -209,7 +204,7 @@ class SearchScreen(BaseScreen):
         except Exception as e:
             self.app.exit(str(e))
 
-    async def action_save_match(self):
+    def action_save_match(self):
         """Save the currently selected match to the database."""
         if not self.matches:
             self.notify("No matches available.", severity="warning")
@@ -236,7 +231,7 @@ class SearchScreen(BaseScreen):
         self.render_matches(initial_selection=idx)
 
         # Notify other screens that flow data has changed (e.g., match count)
-        self.post_message(FlowDataChanged())
+        self.screen.post_message(FlowDataChanged())
 
     def action_new_search(self):
         """Focus on the pattern input and clear it for a new search."""
@@ -246,7 +241,7 @@ class SearchScreen(BaseScreen):
         pattern_input.value = ""
         pattern_input.focus()
 
-    async def on_active_flow_changed(self, event: ActiveFlowChanged):
+    def on_active_flow_changed(self, event: ActiveFlowChanged):
         """Update row highlighting when the active flow changes."""
         self.update_flow_name_in_header()
         self.refresh_row_highlighting()
@@ -270,17 +265,22 @@ class SearchScreen(BaseScreen):
         
         # TODO: find a more sensible way to clear these previous match colours
         # probably stop when we find the first row that is not green?
+
         for row in self.dg.ordered_rows:
             for cell in self.dg.get_row(row.key):
                 cell.style = 'white on black'
 
         flow_id = get_active_flow_id(self.app.db, session_start=self.app.session_start)
-        saved_matches = get_matches_for_flow(self.app.db, flow_id)
+        saved_matches = list(get_matches_for_flow(self.app.db, flow_id))
+        lines = [match.get('line', '').strip() for match in saved_matches]
+        file_names = [match.get('file_name') for match in saved_matches]
         for row in self.dg.ordered_rows[:len(set([m.get('matches_id') for m in saved_matches]))]:
-                for cell in self.dg.get_row(row.key):
-                    cell.style = 'black on green'
+                real_row = self.dg.get_row(row.key)
+                if(real_row[0].plain in file_names and real_row[2].plain.strip() in lines):
+                    for cell in real_row:
+                        cell.style = 'black on green'
 
-    def action_delete_match(self):
+    async def action_delete_match(self):
         """Delete currently selected match from active flow"""
         if not self.matches:
             self.notify("No matches available.", severity="warning")
@@ -301,10 +301,11 @@ class SearchScreen(BaseScreen):
             return
 
         # Delete from flow
-        print(flow_id, match)
         if delete_flow_match_for_match(self.app.db, flow_id, match.id):
             self.notify("Match removed from flow")
             self.render_matches()
-            self.post_message(FlowDataChanged())
         else:
             self.notify("Match not found in flow", severity="warning")
+
+    async def on_flow_data_changed(self, event):
+        self.refresh_row_highlighting()

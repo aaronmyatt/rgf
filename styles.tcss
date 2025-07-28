@@ -43,3 +43,11 @@ Header {
 Header.-tall {
     height: 3;
 }
+
+DataTable {
+        & > .datatable--cursor {
+            background: yellow 80%;
+            color: yellow;
+            text-style: italic;
+        }
+}

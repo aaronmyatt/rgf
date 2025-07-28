@@ -157,13 +157,9 @@ class FlowScreen(BaseScreen):
         """Refresh the flows list."""
         self.run_worker(self.load_flows)
 
-    async def on_flow_data_changed(self, event):
-        """Refresh flows when notified that flow data has changed."""
-        await self.load_flows()
-
-    def on_key(self, event):
+    async def on_key(self, event):
         """Activate the currently selected flow."""
-        super().on_key(event)
+        await super().on_key(event)
         if self.selected_flow and event.key == 'enter':
             try:
                 activate_flow(self.app.db, self.selected_flow.id)

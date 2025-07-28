@@ -76,3 +76,4 @@
     - not an error, a design... 🙈
     - we were adding the same file_no + line, but with a different order_index
     - However, we were highlighting the count(*) of flowmatches, woops.
+BUG: [] highlighted rows are now cleared when starting a new search
