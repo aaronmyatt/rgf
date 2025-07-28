@@ -142,8 +142,8 @@ def get_flow_matches(db, flow_id: int) -> List[Tuple[Match, FlowMatch, Optional[
     # Use window function to get latest note per match
     query = """
         WITH latest_notes AS (
-            SELECT match_id, id, name, note, 
-                   ROW_NUMBER() OVER (PARTITION BY match_id ORDER BY created_at DESC) as rn
+            SELECT flow_match_id, id, name, note, 
+                   ROW_NUMBER() OVER (PARTITION BY flow_match_id ORDER BY created_at DESC) as rn
             FROM match_notes
             WHERE archived = 0
         )
@@ -156,7 +156,7 @@ def get_flow_matches(db, flow_id: int) -> List[Tuple[Match, FlowMatch, Optional[
             ln.note as note_content
         FROM matches m
         JOIN flow_matches fm ON m.id = fm.matches_id
-        LEFT JOIN latest_notes ln ON m.id = ln.match_id AND ln.rn = 1
+        LEFT JOIN latest_notes ln ON m.id = ln.flow_match_id AND ln.rn = 1
         WHERE fm.flows_id = ? 
           AND m.archived = 0 
           AND fm.archived = 0
@@ -184,7 +184,7 @@ def get_flow_matches(db, flow_id: int) -> List[Tuple[Match, FlowMatch, Optional[
         if row['note_id']:
             note = MatchNote(
                 id=row['note_id'],
-                match_id=match.id,
+                flow_match_id=flow_match.id,
                 name=row['note_name'],
                 note=row['note_content']
             )

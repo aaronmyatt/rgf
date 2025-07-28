@@ -50,15 +50,18 @@ ON flow_matches(flows_id, matches_id, order_index);
 -- Table: match_notes
 CREATE TABLE IF NOT EXISTS match_notes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    match_id INTEGER NOT NULL,
+    flow_match_id INTEGER NOT NULL,
     name TEXT NOT NULL,
     description TEXT,
     note TEXT NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     archived BOOLEAN DEFAULT FALSE, -- indicates if the flow is archived
-    FOREIGN KEY (match_id) REFERENCES matches(id)
+    FOREIGN KEY (flow_match_id) REFERENCES flow_matches(id)
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_flow_match_notes
+ON match_notes(flow_match_id);
 
 -- Table: flow_history
 CREATE TABLE IF NOT EXISTS flow_history (

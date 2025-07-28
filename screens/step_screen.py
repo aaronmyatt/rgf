@@ -11,9 +11,10 @@ from waystation import get_plain_lines_from_file, get_language_from_filename
 
 class MatchNoteOverlay(Container):
     """Overlay for adding match notes"""
-    def __init__(self, match: Match):
+    def __init__(self, match: Match, flow_match: FlowMatch):
         super().__init__()
         self.match = match
+        self.flow_match = flow_match
         self.title_input = Input(id="title_input")
         self.note_input = TextArea(id="note_input", language="markdown")
         
@@ -39,7 +40,7 @@ class MatchNoteOverlay(Container):
             
             # Create and save match note
             new_note = MatchNote(
-                match_id=self.match.id,
+                match_id=self.flow_match.id,
                 name=self.title_input.value,
                 note=self.note_input.text
             )
@@ -328,8 +329,8 @@ class StepScreen(BaseScreen):
             return
             
         # Get the match from the selected flow_match
-        match, _, _ = self.flow_matches[self._selected_index]
-        overlay = MatchNoteOverlay(match)
+        match, flow_match, _ = self.flow_matches[self._selected_index]
+        overlay = MatchNoteOverlay(flow_match)
         self.mount(overlay)
         overlay.title_input.focus()
 

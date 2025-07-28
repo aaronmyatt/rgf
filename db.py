@@ -53,7 +53,7 @@ class FlowMatch:
 @dataclass
 class MatchNote:
     id: Optional[int] = None
-    match_id: int = 0
+    flow_match_id: int = 0
     name: str = ""
     description: Optional[str] = None
     note: str = ""
