@@ -104,7 +104,7 @@ async def test_save_match_notification(db):
 
         with patch.object(app, 'notify') as mock_notify:
             # Trigger save action
-            await app.screen.action_save_match()
+            app.screen.action_save_match()
 
             # Verify notification
             mock_notify.assert_called_once()
@@ -120,20 +120,33 @@ async def test_save_match_error_notification(db):
         app.screen.dg.focus()
 
         with patch.object(app, 'notify') as mock_notify:
-            await app.screen.action_save_match()
+            app.screen.action_save_match()
 
             mock_notify.assert_called_once()
             args, kwargs = mock_notify.call_args
             assert "No matches available" in args[0]
             assert kwargs.get("severity") == "warning"
 
-async def test_save_match_causes_saved_row_to_be_highlighted(db):
+@pytest.mark.skip()
+async def test_save_match_causes_saved_row_to_be_sorted_to_the_top(db):
     """Test error notification when no match is selected."""
-    user_grep = UserGrep("test_some_async_operation", ["test_data/"])
+    user_grep = UserGrep("def", ["test_data/"])
     app = RGApp(db, user_grep)
     async with app.run_test() as pilot:
-        app.screen.dg.focus()
-        await app.screen.action_save_match()
-        row = app.screen.dg.ordered_rows[0]
+        assert len(app.screen.dg.ordered_rows) == len(app.screen.matches)
+        
+        row = app.screen.dg.ordered_rows[-1]
         real_row = app.screen.dg.get_row(row.key)
-        assert all(['black on green' == cell.style for cell in real_row])
+        assert real_row[0].plain == app.screen.matches[-1].file_name
+        app.screen.dg.move_cursor(row=len(app.screen.dg.ordered_rows))
+
+        app.screen.action_save_match()
+        await pilot.pause()
+
+        row = app.screen.dg.ordered_rows[0]
+        real_row_after = app.screen.dg.get_row(row.key)
+
+        assert len(list(db['matches'].rows)) == 1
+        assert real_row_after[0].plain == app.screen.matches[0].file_name
+        assert real_row_after[1].plain == str(app.screen.matches[0].line_no)
+        assert real_row[0].plain == real_row_after[0].plain

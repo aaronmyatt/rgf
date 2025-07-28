@@ -4,7 +4,7 @@ import os
 from datetime import datetime
 from dataclasses import asdict
 from app_actions import get_flow_matches
-from db import Flow, Match, FlowMatch, get_db
+from db import Flow, Match, FlowMatch, MatchNote, get_db
 
 @pytest.fixture
 def db():
@@ -38,6 +38,12 @@ def sample_flow_match(db, sample_flow, sample_match):
     fm_id = db['flow_matches'].insert(asdict(flow_match)).last_pk
     return fm_id
 
+@pytest.fixture
+def sample_match_note(db, sample_flow_match):
+    match_note = MatchNote(flow_match_id=sample_flow_match)
+    fm_id = db['match_notes'].insert(asdict(match_note)).last_pk
+    return fm_id
+
 class TestGetFlowMatches:
     def test_empty_flow_returns_empty_list(self, db):
         assert get_flow_matches(db, 999) == []  # Non-existent flow
@@ -45,7 +51,7 @@ class TestGetFlowMatches:
     def test_returns_matches_for_flow(self, db, sample_flow, sample_match, sample_flow_match):
         results = get_flow_matches(db, sample_flow)
         assert len(results) == 1
-        match, flow_match = results[0]
+        match, flow_match, note = results[0]
         assert isinstance(match, Match)
         assert isinstance(flow_match, FlowMatch)
         assert match.id == sample_match

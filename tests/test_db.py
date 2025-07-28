@@ -66,7 +66,8 @@ def test_flowmatch_crud(db):
 
 def test_matchnote_crud(db):
     match_id = insert_row(db, "matches", Match(line="baz", file_path="/tmp/baz.py", file_name="baz.py"))
-    note = MatchNote(match_id=match_id, name="Note1", note="This is a note")
+    flow_match_id = insert_row(db, "flow_matches", FlowMatch(flows_id=1, matches_id=match_id))
+    note = MatchNote(flow_match_id=flow_match_id, name="Note1", note="This is a note")
     note_id = insert_row(db, "match_notes", note)
     fetched = get_row(db, "match_notes", note_id, MatchNote)
     assert fetched.name == "Note1"

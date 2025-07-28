@@ -51,18 +51,15 @@ def sample_match():
         grep_meta= '{"line_number": 1, "file_path": "/path/to/file.py"}',
     )
 
-
-@pytest.fixture
-def sample_match_note():
-    """Create a sample match note for testing."""
-    return MatchNote(match_id=1, note="This is a test note")
-
-
 @pytest.fixture
 def sample_flow_match():
     """Create a sample flow match for testing."""
     return FlowMatch(flows_id=1, matches_id=1, order_index=0)
 
+@pytest.fixture
+def sample_match_note(sample_flow_match):
+    """Create a sample match note for testing."""
+    return MatchNote(flow_match_id=sample_flow_match.id, note="This is a test note")
 
 class TestFlowOperations:
     def test_new_flow(self, db, sample_flow):
@@ -205,7 +202,8 @@ class TestMatchNoteOperations:
     def test_add_match_note(self, db, sample_match, sample_match_note):
         """Test adding a note to a match."""
         match_id = save_match(db, sample_match)
-        sample_match_note.match_id = match_id
+        result = list(db.query('select * from flow_matches where matches_id = ?', (match_id,)))
+        sample_match_note.flow_match_id = result[0].get('id')
         
         note_id = add_match_note(db, sample_match_note)
         
@@ -216,13 +214,14 @@ class TestMatchNoteOperations:
         saved_note_row = db.execute("SELECT * FROM match_notes WHERE id = ?", [note_id]).fetchone()
         saved_note = MatchNote(*saved_note_row)
         assert saved_note is not None
-        assert saved_note.match_id == match_id
+        assert saved_note.flow_match_id == result[0].get('id')
         assert saved_note.note == sample_match_note.note
 
     def test_archive_match_note(self, db, sample_match, sample_match_note):
         """Test archiving a match note."""
         match_id = save_match(db, sample_match)
-        sample_match_note.match_id = match_id
+        result = list(db.query('select * from flow_matches where matches_id = ?', (match_id,)))
+        sample_match_note.flow_match_id = result[0].get('id')
         note_id = add_match_note(db, sample_match_note)
         sample_match_note.id = note_id
         
