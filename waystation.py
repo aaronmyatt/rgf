@@ -159,3 +159,36 @@ def get_language_from_filename(filename: str) -> str:
         '.c': 'c',
     }
     return language_map.get(ext, 'text')
+
+def flow_matches_to_markdown(flow_matches: list) -> str:
+    """
+    Convert flow matches to markdown format.
+    
+    Args:
+        flow_matches: List of tuples (Match, FlowMatch, Optional[MatchNote])
+    
+    Returns:
+        Markdown string representation of the flow
+    """
+    markdown_lines = []
+    
+    for idx, (match, flow_match, note) in enumerate(flow_matches):
+        # Step header (##)
+        step_num = flow_match.order_index + 1
+        header = f"## Step {step_num}: {match.file_name}:{match.line_no}"
+        markdown_lines.append(header)
+        
+        # Note section (### + paragraph)
+        if note:
+            if note.name:
+                markdown_lines.append(f"### {note.name}")
+            markdown_lines.append(f"{note.note}\n")
+        
+        # Code block (```)
+        preview_text = get_plain_lines_from_file(match, 3)
+        language = get_language_from_filename(match.file_name) or ""
+        markdown_lines.append(f"```{language}")
+        markdown_lines.append(preview_text)
+        markdown_lines.append("```\n")  # Extra newline between steps
+        
+    return "\n".join(markdown_lines)
