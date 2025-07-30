@@ -51,3 +51,77 @@ DataTable {
             text-style: italic;
         }
 }
+
+
+EditFlowScreen {
+    align: center middle;
+    background: transparent;
+
+
+    ListView {
+        border-title-color: green;
+        border-title-background: white;
+        border-title-style: bold;
+
+        border-subtitle-color: magenta;
+        border-subtitle-background: yellow;
+        border-subtitle-style: italic;
+        border: tall green;
+        margin: 5 0;
+        background: $surface-lighten-1;
+        width: 80%;
+    }
+
+    ListItem {
+        .flow-step {
+            padding: 1 1 0 1;
+            height: auto;
+        }
+        .step-header {
+            height: 1;
+            .step-number {
+                color: $accent;
+            }
+            .note-indicator {
+                color: $warning;
+                margin-left: 1;
+            }
+        }
+        .note-container {
+            margin: 1 2 0 2;
+            background: $surface;
+            border: tall $accent;
+            height: auto;
+
+            .note-title {
+                padding: 0 1;
+                color: $text;
+                margin-bottom: 1;
+                text-style: bold;
+            }
+            .note-content {
+                height: auto;
+                background: $surface-darken-1;
+            }
+        }
+
+        .code-area {
+            padding: 1;
+            margin-top: 1;
+        }
+    }
+
+    
+    MatchNoteOverlay {
+        background: $background;
+        border: $primary;
+        width: 80%;
+        height: auto;
+        padding: 1;
+        layer: overlay;
+    }
+    MatchNoteOverlay Input,
+    MatchNoteOverlay TextArea {
+        width: 100%;
+    }
+}

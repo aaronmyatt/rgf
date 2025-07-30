@@ -2,9 +2,9 @@ from typing import Optional, Tuple
 from textual.binding import Binding
 from textual.app import ComposeResult
 from textual.message import Message
-from textual.widgets import Footer, ListView, ListItem, TextArea, Label, Input, Button
+from textual.widgets import Footer, ListView, ListItem, TextArea, Label, Input, Button, MarkdownViewer, Markdown
 from textual.containers import Container, Horizontal, Vertical
-from textual import events
+from textual.screen import Screen
 from .base_screen import BaseScreen, FlowHeader
 from app_actions import get_active_flow_id, get_flow_matches, update_match_note
 from db import Match, FlowMatch, MatchNote
@@ -18,6 +18,10 @@ class NewMatchNote(Message):
 
 class MatchNoteOverlay(Container):
     """Overlay for adding match notes"""
+
+    BINDINGS = [
+        Binding("escape", "cancel", "Cancel", show=True),
+    ]
 
     def __init__(self, flow_match_extended: Tuple[Match, FlowMatch, Optional[MatchNote]]):
         super().__init__()
@@ -66,108 +70,32 @@ class MatchNoteOverlay(Container):
             self.post_message(NewMatchNote(new_note))
             self.remove()
 
-class StepScreen(BaseScreen):
-    CSS = """
-    .step-header {
-        height: 1;
-        margin-bottom: 1;
-    }
-    .step-number {
-        color: $accent;
-        margin-right: 1;
-    }
-    .note-indicator {
-        color: $warning;
-        margin-left: 1;
-    }
-    .note-container {
-        background: $surface;
-        border-top: dashed $accent;
-        padding: 1;
-        margin-top: 1;
-    }
-    .note-title {
-        color: $text;
-        margin-bottom: 1;
-    }
-    .note-content {
-        background: $surface-darken-1;
-    }
-    .flow-step {
-        height: auto;
-        border-left: solid $primary;
-        padding-left: 1;
-        margin: 1 0;
-    }
-    MatchNoteOverlay {
-        background: $background;
-        border: $primary;
-        width: 80%;
-        height: auto;
-        padding: 1;
-        layer: overlay;
-    }
-    MatchNoteOverlay Input,
-    MatchNoteOverlay TextArea {
-        width: 100%;
-    }
-    """
-    id = "steps"
+    def action_cancel(self):
+        """Handle cancel action"""
+        self.remove()            
+
+class EditFlowScreen(Screen):
+    id = "edit steps"
     BINDINGS = [
         Binding("shift+up", "move_up", "Move Up", show=True),
         Binding("shift+down", "move_down", "Move Down", show=True),
         Binding("e", "add_match_note", "Add Note", show=True),
-        Binding("n", "toggle_notes", "Toggle Notes", show=True),  # New binding
+        Binding("enter", "add_match_note", "Add Note", show=False),
+        Binding("q", "quit", "Close", show=True),
+        Binding("escape", "quit", "Close", show=False),
     ]
-    
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.flow_matches = []
-        self._selected_index = 0
-        self.editing_flow = False
-        self.show_notes = True  # Default to showing notes
 
     def compose(self) -> ComposeResult:
-        yield FlowHeader()
         yield ListView(id="matches_list")
         yield Footer()
 
-    def action_toggle_notes(self):
-        """Toggle note visibility globally"""
-        self.show_notes = not self.show_notes
-        if hasattr(self.app, "config"):
-            self.app.config["show_notes"] = self.show_notes
-        self.refresh_list_items()
-
-    def refresh_list_items(self):
-        """Refresh list items with current note visibility"""
-        list_view = self.query_one("#matches_list")
-        list_view.clear()
-        
-        for idx, (match, flow_match, note) in enumerate(self.flow_matches):
-            list_view.append(
-                self.create_match_list_item(
-                    match, 
-                    flow_match,
-                    note,
-                    selected=(idx == self._selected_index)
-                )
-            )
-        
-        if self.flow_matches:
-            list_view.index = self._selected_index
-
     async def on_mount(self):
-        self.update_flow_name_in_header()
+        """Initialize the screen and load flow matches"""
+        list_view = self.query_one(ListView)
+        list_view.focus()
         await self.load_flow_matches()
-        self.query_one(ListView).focus()
-
-    async def on_screen_resume(self, event):
-        """Restore note visibility state when returning to screen"""
-        await super().on_screen_resume(event)
-        if hasattr(self.app, "config"):
-            self.show_notes = self.app.config.get("show_notes", True)
-        await self.load_flow_matches()
+        list_view.border_title = "Edit Flow"
+        list_view.border_subtitle = f"Steps {len(self.flow_matches)}"
 
     async def load_flow_matches(self):
         """Load matches for the active flow"""
@@ -190,7 +118,7 @@ class StepScreen(BaseScreen):
             matches_list.append(ListItem(Label("No matches in this flow.")))
             return
             
-        for idx, (match, flow_match, note) in enumerate(self.flow_matches):
+        for match, flow_match, note in self.flow_matches:
             matches_list.append(
                 self.create_match_list_item(
                     match, 
@@ -198,9 +126,6 @@ class StepScreen(BaseScreen):
                     note
                 )
             )
-
-    def on_match_note_overlay_new_match_note(self, event):
-        print(event)
 
     def create_match_list_item(
         self, 
@@ -220,6 +145,26 @@ class StepScreen(BaseScreen):
             children.append(Label("📝", classes="note-indicator"))
         
         header = Horizontal(*children, classes="step-header")
+        
+        # Main container
+        main_container_children = [header]
+                
+        # Note section (conditionally visible)
+        if note:
+            note_container_children = []
+            note_container_children.append(Label(note.name, classes="note-title")) if note.name else None
+            note_container_children.append(
+                TextArea(
+                    note.note, 
+                    language="markdown", 
+                    read_only=True, 
+                    classes="note-content"
+                )
+            ) if note.note else None
+            note_container = Vertical(*note_container_children, classes="note-container")
+            main_container_children.append(note_container)
+
+
         # Code area
         preview_text = get_plain_lines_from_file(match, 3)
         language = get_language_from_filename(match.file_name)
@@ -228,26 +173,11 @@ class StepScreen(BaseScreen):
             language=language,
             read_only=True,
             show_line_numbers=True,
-            classes="h-auto"
+            classes="h-auto code-area"
         )
-        
-        # Main container
-        main_container_children = [header, code_area]
-        
-        
-        # Note section (conditionally visible)
-        if note and self.show_notes:
-            note_container = Vertical(
-                Label(note.name, classes="note-title"),
-                TextArea(
-                    note.note, 
-                    read_only=True, 
-                    classes="note-content h-auto"
-                ),
-                classes="note-container h-auto")
-            main_container_children.append(note_container)
-        
-        main_container = Vertical(*main_container_children, classes="flow-step h-auto")
+
+        main_container_children.append(code_area)
+        main_container = Vertical(*main_container_children, classes="flow-step")
         return ListItem(main_container, classes="h-auto", id=f"order-{flow_match.order_index}")
 
     # ---- Reordering functionality ----
@@ -330,8 +260,7 @@ class StepScreen(BaseScreen):
             self._selected_index = int(event.item.id.split('-')[1])
 
     async def on_new_match_note(self, event):
-        await self._refresh_list_view()
-        
+        await self.load_flow_matches()
 
     def action_add_match_note(self):
         """Show note overlay for the selected match"""
@@ -339,10 +268,13 @@ class StepScreen(BaseScreen):
             return
             
         # Get the match from the selected flow_match
-        print(self._selected_index)
         flow_match_extended = self.flow_matches[self._selected_index]
         overlay = MatchNoteOverlay(flow_match_extended=flow_match_extended)
         self.mount(overlay)
+
+    async def action_quit(self):
+        """Close the EditFlowScreen"""
+        await self.dismiss(self.flow_matches)
 
     def initialize_flow_match_order(self):
         try:
@@ -360,4 +292,48 @@ class StepScreen(BaseScreen):
             # Rollback on error
             self.app.db.execute("ROLLBACK")
             self.notify(f"Failed to initialize order indices: {str(e)}", severity="error")
+      
+class StepScreen(BaseScreen):
+    id = "steps"
+    BINDINGS = [
+        Binding("e", "edit_flow", "Edit Flow", show=True),
+    ]
+    
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.flow_matches = []
+        self._selected_index = 0
+        self.editing_flow = False
+        self.show_notes = True  # Default to showing notes
+
+    def compose(self) -> ComposeResult:
+        yield FlowHeader()
+        yield MarkdownViewer()
+        yield Footer()
+
+    def on_mount(self):
+        # self.query_one(ListView).focus()
+        self.update_flow_name_in_header()
+        self.load_flow_matches()
+
+    def on_screen_resume(self, event):
+        """Restore note visibility state when returning to screen"""
+        super().on_screen_resume(event)
+        if hasattr(self.app, "config"):
+            self.show_notes = self.app.config.get("show_notes", True)
+
+    def load_flow_matches(self, flow_matches=None):
+        """in markdown"""
+        from waystation import flow_matches_to_markdown
         
+        flow_id = get_active_flow_id(self.app.db, session_start=self.app.session_start)
+        self.flow_matches = flow_matches or get_flow_matches(self.app.db, flow_id)
+        md = flow_matches_to_markdown(self.flow_matches)
+        self.query_one(Markdown).update(md)
+
+    async def action_edit_flow(self):
+        """Switch to EditFlowScreen"""
+        def reload_flow_matches(flows):
+            self.load_flow_matches(flows)
+
+        await self.app.push_screen(EditFlowScreen(), reload_flow_matches)
