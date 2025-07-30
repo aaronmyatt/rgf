@@ -1,22 +1,31 @@
+from typing import Optional, Tuple
 from textual.binding import Binding
 from textual.app import ComposeResult
+from textual.message import Message
 from textual.widgets import Footer, ListView, ListItem, TextArea, Label, Input, Button
 from textual.containers import Container, Horizontal, Vertical
 from textual import events
 from .base_screen import BaseScreen, FlowHeader
-from app_actions import get_active_flow_id, get_flow_matches
-from db import Match, FlowMatch
+from app_actions import get_active_flow_id, get_flow_matches, update_match_note
+from db import Match, FlowMatch, MatchNote
 from waystation import get_plain_lines_from_file, get_language_from_filename
 
+class NewMatchNote(Message):
+    """"""
+    def __init__(self, note: MatchNote):
+        super().__init__()
+        self.note = note
 
 class MatchNoteOverlay(Container):
     """Overlay for adding match notes"""
-    def __init__(self, match: Match, flow_match: FlowMatch):
+
+    def __init__(self, flow_match_extended: Tuple[Match, FlowMatch, Optional[MatchNote]]):
         super().__init__()
-        self.match = match
-        self.flow_match = flow_match
+        self.match, self.flow_match, self.note = flow_match_extended
         self.title_input = Input(id="title_input")
+        self.title_input.value = self.note.name if self.note else ""
         self.note_input = TextArea(id="note_input", language="markdown")
+        self.note_input.text = self.note.note if self.note else ""
         
     def compose(self) -> ComposeResult:
         yield Label(f"Add Note: {self.match.file_name}:{self.match.line_no}")
@@ -30,23 +39,32 @@ class MatchNoteOverlay(Container):
         
     def on_mount(self):
         self.title_input.focus()
+
+    def on_unmount(self):
+        self.title_input.value = ""
+        self.note_input.text = ""
+        self.note = None
         
     def on_button_pressed(self, event: Button.Pressed):
         if event.button.id == "cancel":
             self.remove()
         elif event.button.id == "save":
             from app_actions import add_match_note
-            from db import MatchNote
             
             # Create and save match note
             new_note = MatchNote(
-                match_id=self.flow_match.id,
+                flow_match_id=self.flow_match.id,
                 name=self.title_input.value,
                 note=self.note_input.text
             )
-            add_match_note(self.app.db, new_note)
-            self.remove()
+            if self.note:
+                new_note.id = self.note.id
+                update_match_note(self.app.db, new_note)
+            else:
+                add_match_note(self.app.db, new_note)
             self.app.notify("Note saved successfully!")
+            self.post_message(NewMatchNote(new_note))
+            self.remove()
 
 class StepScreen(BaseScreen):
     CSS = """
@@ -177,17 +195,18 @@ class StepScreen(BaseScreen):
                 self.create_match_list_item(
                     match, 
                     flow_match,
-                    note,
-                    selected=(idx == self._selected_index)
+                    note
                 )
             )
+
+    def on_match_note_overlay_new_match_note(self, event):
+        print(event)
 
     def create_match_list_item(
         self, 
         match: Match, 
         flow_match: FlowMatch, 
-        note,
-        selected: bool = False
+        note
     ) -> ListItem:
         """Create a ListItem with syntax-highlighted code and note"""
         # Step header with note indicator
@@ -229,7 +248,7 @@ class StepScreen(BaseScreen):
             main_container_children.append(note_container)
         
         main_container = Vertical(*main_container_children, classes="flow-step h-auto")
-        return ListItem(main_container, classes="h-auto")
+        return ListItem(main_container, classes="h-auto", id=f"order-{flow_match.order_index}")
 
     # ---- Reordering functionality ----
     
@@ -295,8 +314,7 @@ class StepScreen(BaseScreen):
                 self.create_match_list_item(
                     match, 
                     flow_match,
-                    note,
-                    selected=(idx == self._selected_index)
+                    note
                 )
             )
         
@@ -304,24 +322,16 @@ class StepScreen(BaseScreen):
         if self.flow_matches:
             list_view.index = self._selected_index
 
-    # ---- Selection navigation ----
-    
-    def on_key(self, event: events.Key) -> None:
-        """Handle keyboard navigation"""
-        super().on_key(event)
-        if event.key == "up":
-            self._navigate_selection(-1)
-        elif event.key == "down":
-            self._navigate_selection(1)
-    
-    def _navigate_selection(self, direction: int):
-        """Move selection up or down"""
-        if not self.flow_matches:
-            return
-            
-        new_index = max(0, min(len(self.flow_matches) - 1, self._selected_index + direction))
-        if new_index != self._selected_index:
-            self._selected_index = new_index
+    def on_list_view_selected(self, event):
+        self._selected_index = int(event.item.id.split('-')[1])
+
+    def on_list_view_highlighted(self, event):
+        if event.item:
+            self._selected_index = int(event.item.id.split('-')[1])
+
+    async def on_new_match_note(self, event):
+        await self._refresh_list_view()
+        
 
     def action_add_match_note(self):
         """Show note overlay for the selected match"""
@@ -329,10 +339,10 @@ class StepScreen(BaseScreen):
             return
             
         # Get the match from the selected flow_match
-        match, flow_match, _ = self.flow_matches[self._selected_index]
-        overlay = MatchNoteOverlay(flow_match)
+        print(self._selected_index)
+        flow_match_extended = self.flow_matches[self._selected_index]
+        overlay = MatchNoteOverlay(flow_match_extended=flow_match_extended)
         self.mount(overlay)
-        overlay.title_input.focus()
 
     def initialize_flow_match_order(self):
         try:

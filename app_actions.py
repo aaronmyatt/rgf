@@ -67,6 +67,10 @@ def add_match_note(db, match_note: MatchNote) -> int:
     """Add a note to a match and return its id."""
     return insert_row(db, "match_notes", match_note)
 
+def update_match_note(db, match_note: MatchNote) -> int:
+    """Add a note to a match and return its id."""
+    return update_row(db, "match_notes", match_note.id, match_note)
+
 def add_match_to_flow(db, flow_match: FlowMatch) -> int:
     """Add a match to a flow at a specific order index."""
     return insert_row(db, "flow_matches", flow_match)
