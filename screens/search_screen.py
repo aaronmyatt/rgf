@@ -2,7 +2,7 @@ from os import system
 
 from textual.binding import Binding
 from textual.app import ComposeResult
-from textual.widgets import DataTable, Static, Input, Footer
+from textual.widgets import DataTable, TextArea, Input, Footer
 from textual.widgets.data_table import CellDoesNotExist, RowDoesNotExist
 from textual.containers import Horizontal, Vertical, Container
 from textual import events
@@ -58,11 +58,11 @@ class UserGrepInput(Container):
     def action_unfocus_all(self):
         self.set_focus(None)
 
-class GrepAstPreview(Static):
+class GrepAstPreview(TextArea):
     id="grep_ast_preview"
 
     def update_preview(self, match: Match):
-        self.update(get_grep_ast_preview(match))
+        self.load_text(get_grep_ast_preview(match))
 
 class SearchScreen(BaseScreen):
     CSS = '''
@@ -112,7 +112,7 @@ class SearchScreen(BaseScreen):
         self.dg = DataTable(zebra_stripes=True, id="matches_table")
         self.dg.cursor_type = "row"
         self.dg.add_columns("File", "Line", "Text")
-        self.preview = GrepAstPreview(markup=False)
+        self.preview = GrepAstPreview()
         with Vertical():
             with Horizontal(classes="h-11div12"):
                 yield self.dg
