@@ -125,3 +125,20 @@ EditFlowScreen {
         width: 100%;
     }
 }
+
+SearchScreen {
+    DataTable {
+        margin-top: 1;
+        border: tall black;
+        &:focus  {
+            border: tall yellow;
+        }
+    }
+
+    TextArea {
+        margin-top: 1;
+        &:focus  {
+            border: tall yellow;
+        }
+    }
+}

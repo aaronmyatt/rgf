@@ -59,7 +59,7 @@
 [x] rename screen
 [x] list FlowMatches
 [x] Add title/notes to matches
-    [] display title/description in step list
+    [x] display title/description in step list
 [x] BUG: fix datatable throwing when the same rows are added. How can we defend against it? Always clear the table on input submission? Or iterate through existing rows for rows with the same key/id?
 
 [] copy steps to clipboard for early llm usage
