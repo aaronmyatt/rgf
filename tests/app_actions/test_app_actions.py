@@ -104,20 +104,57 @@ class TestFlowOperations:
 
 
 class TestMatchOperations:
-    def test_save_match(self, db, sample_match):
-        """Test saving a new match."""
+    def test_save_match(self, db, sample_match, monkeypatch):
+        """Test saving a new match, including git info enrichment."""
+        # Patch get_git_info to return dummy values
+        from app_actions import enrich_match_with_git_info
+        monkeypatch.setattr(
+            "app_actions.get_git_info",
+            lambda path: ("/mock/root", "deadbeef" * 5, "feature/test-branch")
+        )
         match_id = save_match(db, sample_match)
-        
         assert isinstance(match_id, int)
         assert match_id > 0
-        
-        # Verify the match was saved correctly
-        saved_match_row = db.execute("SELECT * FROM matches WHERE id = ?", [match_id]).fetchone()
-        saved_match = Match(*saved_match_row)
+        # Verify the match was saved correctly, including git info
+        from db import get_row
+        saved_match = get_row(db, "matches", match_id, Match)
         assert saved_match is not None
         assert saved_match.file_path == sample_match.file_path
         assert saved_match.grep_meta == sample_match.grep_meta
         assert saved_match.line == sample_match.line
+        # Check git info fields
+        assert getattr(saved_match, "git_repo_root", None) == "/mock/root"
+        print("DEBUG: git_commit_sha:", getattr(saved_match, "git_commit_sha", None))
+        assert getattr(saved_match, "git_commit_sha", None) == "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+        assert getattr(saved_match, "git_branch", None) == "feature/test-branch"
+
+    def test_save_match_real_git_info(self, db, tmp_path):
+        """Integration: saving a match with a real git repo populates git info fields in DB."""
+        import subprocess
+        from db import Match
+        # Setup a real git repo
+        repo_dir = tmp_path / "repo"
+        repo_dir.mkdir()
+        subprocess.run(["git", "init"], cwd=repo_dir, check=True)
+        (repo_dir / "file.py").write_text("print('hi')\n")
+        subprocess.run(["git", "add", "file.py"], cwd=repo_dir, check=True)
+        subprocess.run(["git", "commit", "-m", "init"], cwd=repo_dir, check=True)
+        sha = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=repo_dir).decode().strip()
+        branch = subprocess.check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"], cwd=repo_dir).decode().strip()
+        # Save a match for a file in this repo
+        match = Match(
+            file_path=str(repo_dir / "file.py"),
+            file_name="file.py",
+            line="print('hi')",
+            grep_meta='{"line_number": 1, "file_path": "%s"}' % (repo_dir / "file.py"),
+        )
+        match_id = save_match(db, match)
+        from db import get_row
+        saved_match = get_row(db, "matches", match_id, Match)
+        assert saved_match.git_repo_root is not None
+        assert os.path.samefile(saved_match.git_repo_root, str(repo_dir))
+        assert saved_match.git_commit_sha == sha
+        assert saved_match.git_branch == branch
 
     def test_archive_match(self, db, sample_match):
         """Test archiving a match."""
