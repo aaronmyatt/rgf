@@ -212,8 +212,9 @@ class SearchScreen(BaseScreen):
 
         idx = self.dg.cursor_coordinate.row
         flow_id = get_active_flow_id(self.app.db, session_start=self.app.session_start)     
-        
-        save_match(self.app.db, self.matches[idx], flow_id=flow_id)
+
+        match = self.matches[idx]
+        save_match(self.app.db, match, flow_id=flow_id)
         if flow_id:
             """do nothing"""
         else:
@@ -224,8 +225,8 @@ class SearchScreen(BaseScreen):
         active_flow = get_active_flow(self.app.db, self.app.session_start)
         flow_name = active_flow.name if active_flow else "No active flow"
         self.post_message(ActiveFlowChanged(flow_name))
-        
-        self.notify(f"Match saved: {self.matches[idx].file_name} at line {self.matches[idx].line_no}")
+
+        self.notify(f"Match saved: {match.file_name} at line {match.line_no}")
 
         # TODO: we can be smarter about moving selected items to the top. This is rerendering the whole list 
         self.render_matches(initial_selection=idx)
