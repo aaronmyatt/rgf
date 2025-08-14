@@ -20,6 +20,9 @@ CREATE TABLE IF NOT EXISTS matches (
     file_name TEXT NOT NULL,
     line_no INTEGER NOT NULL, -- stores the line number in the file
     grep_meta TEXT, -- stores grep metadata as JSON
+    git_repo_root TEXT, -- path to the git repo root (optional)
+    git_commit_sha TEXT, -- commit hash associated with this match
+    git_branch TEXT, -- branch name (optional, for context)
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     archived BOOLEAN DEFAULT FALSE -- indicates if the flow is archived

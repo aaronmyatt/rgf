@@ -36,6 +36,9 @@ class Match:
     file_name: str = ""
     line_no: int = 0
     grep_meta: Optional[str] = None
+    git_repo_root: Optional[str] = None
+    git_commit_sha: Optional[str] = None
+    git_branch: Optional[str] = None
     created_at: Optional[str] = None
     updated_at: Optional[str] = None
     archived: bool = False

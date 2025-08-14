@@ -1,3 +1,4 @@
+import os
 from sqlite3 import IntegrityError
 from datetime import datetime
 from typing import Optional, List, Tuple
@@ -6,6 +7,7 @@ from db import (
     Flow, Match, FlowMatch, MatchNote, FlowHistory, FlowHistoryResult, _delete_row,
     insert_row, get_row, update_row, archive_row, prepare_row
 )
+from waystation import get_git_info
 
 def new_flow(db, flow: Flow) -> int:
     """Create a new flow and return its id."""
@@ -32,9 +34,16 @@ def get_match(db, match: Match):
     """, (match.line, match.file_path))
     return next((Match(**match) for match in result), None)
 
-def save_match(db, match: Match, flow_id: int =None) -> int:
+def enrich_match_with_git_info(match):
+    git_repo_root, git_commit_sha, git_branch = get_git_info(os.path.dirname(match.file_path))
+    match.git_repo_root = git_repo_root
+    match.git_commit_sha = git_commit_sha
+    match.git_branch = git_branch
+
+def save_match(db, match: Match, flow_id: int=None) -> int:
     """Save a new match and return its id."""
     order_index = 0
+    enrich_match_with_git_info(match)
 
     try:
         try:

@@ -192,3 +192,18 @@ def flow_matches_to_markdown(flow_matches: list) -> str:
         markdown_lines.append("```\n")  # Extra newline between steps
         
     return "\n".join(markdown_lines)
+
+def get_git_info(path="."):
+    """Return git_repo_root, git_commit_sha, git_branch for the given path."""
+    def run_git_cmd(args):
+        return subprocess.check_output(
+            ["git"] + args, cwd=path
+        ).decode("utf-8").strip()
+    
+    try:
+        git_repo_root = run_git_cmd(["rev-parse", "--show-toplevel"])
+        git_commit_sha = run_git_cmd(["rev-parse", "HEAD"])
+        git_branch = run_git_cmd(["rev-parse", "--abbrev-ref", "HEAD"])
+        return git_repo_root, git_commit_sha, git_branch
+    except Exception:
+        return None, None, None
