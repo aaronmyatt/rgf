@@ -71,12 +71,12 @@ class SearchScreen(BaseScreen):
     id = "search"
     BINDINGS = [
         Binding(key="/", action="new_search", description="New Search", show=True, priority=True),
-        Binding(key="s", action="save_match", description="Save Match", show=False),
+        # Binding(key="s", action="save_match", description="Save Match", show=False),
         Binding(key="enter", action="save_match", description="Save Match", show=True, priority=True),
         Binding(key="d", action="delete_match", description="Remove match", show=True),
         Binding(key="shift+enter", action="open_in_editor", description="Open in editor", show=True),
-        Binding(key="j", action="cursor_down", show=False),
-        Binding(key="k", action="cursor_up", show=False),
+        # Binding(key="j", action="cursor_down", show=False),
+        # Binding(key="k", action="cursor_up", show=False),
         # Binding(key="ctrl+f", action="page_down", show=False),
         # Binding(key="ctrl+b", action="page_up", show=False),
         # Binding(key="ctrl+n", action="cursor_down", show=False),
@@ -106,14 +106,22 @@ class SearchScreen(BaseScreen):
         self.matches: list[Match] = []
         self.dg = None
         self.preview = None
+        # This attribute will store the current filter string as the user types while the DataTable is focused.
+        # It will be displayed above the DataTable, but will not affect filtering yet.
+        self.table_filter = ""
 
     def compose(self) -> ComposeResult:
+        # Compose the UI layout for the SearchScreen.
         yield FlowHeader()
         self.dg = DataTable(zebra_stripes=True, id="matches_table")
         self.dg.cursor_type = "row"
         self.dg.add_columns("File", "Line", "Text")
         self.preview = GrepAstPreview(read_only=True)
         with Vertical():
+            # Add a Label above the DataTable to display the current filter string.
+            # This will be updated as the user types while the DataTable is focused.
+            from textual.widgets import Label
+            yield Label("", id="table_filter_label", classes="filter-label")
             with Horizontal(classes="h-11div12"):
                 yield self.dg
                 with Vertical():
@@ -172,7 +180,27 @@ class SearchScreen(BaseScreen):
     async def on_key(self, event: events.Key) -> None:
         # Prevent screen switching if an Input is focused
         await super().on_key(event)
-        if isinstance(self.focused, Input):
+
+        # If the DataTable is focused (and not an Input), capture typed keys to build the filter string.
+        # This does not filter the table yet, just updates the display above the table.
+        if self.focused == self.dg:
+            # Handle backspace: remove last character from filter string
+            if event.key == "backspace":
+                self.table_filter = self.table_filter[:-1]
+            # Handle printable characters: add to filter string
+            elif len(event.key) == 1 and event.key.isprintable():
+                self.table_filter += event.key
+            # Handle escape: clear the filter string
+            elif event.key == "escape":
+                self.table_filter = ""
+
+            elif event.key == "space":
+                self.table_filter += " "
+            # Update the label above the DataTable to show the current filter string
+            self.update_table_filter_label()
+            # Do not return here; allow other key handling to proceed as normal
+
+        if self.focused != self.dg and isinstance(self.focused, Input):
             if event.key in {"1", "2", "3"}:
                 return
             if event.key == "escape":
@@ -182,6 +210,20 @@ class SearchScreen(BaseScreen):
             self.action_save_match()
         elif event.key == "escape":
             self.action_unfocus_all()
+
+    def update_table_filter_label(self):
+        """
+        Update the label above the DataTable to show the current filter string.
+        This provides immediate feedback to the user as they type.
+        """
+        from textual.widgets import Label
+        # Query for the label widget by its id
+        filter_label = self.query_one("#table_filter_label", Label)
+        # Set the label text to show the filter string, or clear if empty
+        if self.table_filter:
+            filter_label.update(f"Filter: {self.table_filter}")
+        else:
+            filter_label.update("")
     
     def action_unfocus_all(self):
         self.set_focus(None)
