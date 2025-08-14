@@ -62,19 +62,19 @@ async def test_data_table_row_selection_updates_preview(db):
         datatable = app.screen.query_one('#matches_table')
         datatable.focus()
 
-        preview1 = app.screen.query_one('#grep_ast_preview')._content
+        preview1 = app.screen.query_one('#grep_ast_preview').text
         assert preview1 is not None
         
         # Test cursor down
         await pilot.press("down")
-        preview2 = app.screen.query_one('#grep_ast_preview')._content
+        preview2 = app.screen.query_one('#grep_ast_preview').text
         # Preview should be updated for the next row
         assert preview2 is not None
         assert preview2 != preview1
 
         # Test cursor up
         await pilot.press("up")
-        preview11 = app.screen.query_one('#grep_ast_preview')._content
+        preview11 = app.screen.query_one('#grep_ast_preview').text
         assert preview11 is not None
         assert preview11 == preview1
 
@@ -170,7 +170,7 @@ async def test_search_no_matches(db):
         assert len(app.screen.matches) == 0
         datatable = app.screen.query_one('#matches_table')
         assert len(datatable.rows) == 0
-        preview = app.screen.query_one('#grep_ast_preview')._content
+        preview = app.screen.query_one('#grep_ast_preview').text
         assert preview == '<no preview>'  # No preview should be shown
 
 
@@ -211,7 +211,7 @@ async def test_preview_error_handling(db):
         app.screen.matches = [Match("nonexistent.py", 1, "test content")]
         app.screen.update_preview(0)
         # Should not crash and should display error message
-        assert app.screen.preview._content == "<no preview>"
+        assert app.screen.preview.text == "<no preview>"
 
 async def test_save_match_to_database_binding(db):
     """Test that pressing 's' saves the current match to the database."""

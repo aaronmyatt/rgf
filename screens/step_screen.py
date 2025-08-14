@@ -316,9 +316,9 @@ class StepScreen(BaseScreen):
         self.update_flow_name_in_header()
         self.load_flow_matches()
 
-    def on_screen_resume(self, event):
+    async def on_screen_resume(self, event):
         """Restore note visibility state when returning to screen"""
-        super().on_screen_resume(event)
+        await super().on_screen_resume(event)
         if hasattr(self.app, "config"):
             self.show_notes = self.app.config.get("show_notes", True)
 

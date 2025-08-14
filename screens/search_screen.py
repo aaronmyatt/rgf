@@ -112,7 +112,7 @@ class SearchScreen(BaseScreen):
         self.dg = DataTable(zebra_stripes=True, id="matches_table")
         self.dg.cursor_type = "row"
         self.dg.add_columns("File", "Line", "Text")
-        self.preview = GrepAstPreview()
+        self.preview = GrepAstPreview(read_only=True)
         with Vertical():
             with Horizontal(classes="h-11div12"):
                 yield self.dg
@@ -237,7 +237,7 @@ class SearchScreen(BaseScreen):
         """Focus on the pattern input and clear it for a new search."""
         pattern_input = self.query_one("#pattern_input", Input)
         # clear preview
-        self.preview.update("<no preview>")
+        self.preview.load_text("<no preview>")
         pattern_input.value = ""
         pattern_input.focus()
 
