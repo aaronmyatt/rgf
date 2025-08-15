@@ -139,21 +139,46 @@ class SearchScreen(BaseScreen):
         self.render_matches()
 
     def render_matches(self, initial_selection=0):
+        """
+        Render the DataTable rows, filtered by self.table_filter if set.
+        Only matches containing the filter string in file name, line, or line number are shown.
+        """
         self.dg.clear()
-        if self.matches:
-            flow_id = get_active_flow_id(self.app.db, session_start=self.app.session_start)
-            saved_matches = list(get_matches_for_flow(self.app.db, flow_id))
-            lines = [match.get('line') for match in saved_matches]
-            file_paths = [match.get('file_path') for match in saved_matches]
-            self.matches = sorted(self.matches, key=lambda m: 0 if m.line in lines and m.file_path in file_paths else 1)
+        filter_str = self.table_filter.lower().strip()
 
-            for match in self.matches:
-                self.dg.add_row(Text(match.file_name), Text(str(match.line_no)), Text(match.line))
+        # Sort matches as before: saved matches (in flow) appear first
+        flow_id = get_active_flow_id(self.app.db, session_start=self.app.session_start)
+        saved_matches = list(get_matches_for_flow(self.app.db, flow_id))
+        lines = [match.get('line') for match in saved_matches]
+        file_paths = [match.get('file_path') for match in saved_matches]
+        sorted_matches = sorted(self.matches, key=lambda m: 0 if m.line in lines and m.file_path in file_paths else 1)
 
-            self.screen.post_message(FlowDataChanged())
+        # Filter matches if filter_str is not empty
+        if filter_str:
+            # Filter matches: show only those where the filter string appears in file_name, line, or line_no
+            filtered_matches = [
+                m for m in sorted_matches
+                if filter_str in m.file_name.lower()
+                or filter_str in m.line.lower()
+                or filter_str in str(m.line_no)
+            ]
+        else:
+            filtered_matches = sorted_matches
+
+        # Add filtered matches to the DataTable
+        for match in filtered_matches:
+            self.dg.add_row(
+                Text(match.file_name),
+                Text(str(match.line_no)),
+                Text(match.line)
+            )
+
+        self.screen.post_message(FlowDataChanged())
+        # If there are filtered matches, select the first row and update preview
+        if filtered_matches:
             self.update_preview(0)
             self.dg.move_cursor(row=initial_selection)
-        else:  # No matches found
+        else:
             self.update_preview(0)
 
     def on_input_submitted(self, event):
@@ -182,22 +207,23 @@ class SearchScreen(BaseScreen):
         await super().on_key(event)
 
         # If the DataTable is focused (and not an Input), capture typed keys to build the filter string.
-        # This does not filter the table yet, just updates the display above the table.
+        # Now, also filter the DataTable as the filter string changes.
         if self.focused == self.dg:
             # Handle backspace: remove last character from filter string
             if event.key == "backspace":
                 self.table_filter = self.table_filter[:-1]
-            # Handle printable characters: add to filter string
+            # Handle printable characters: add to filter string (including spacebar)
+            elif event.key == "space":
+                self.table_filter += " "
             elif len(event.key) == 1 and event.key.isprintable():
                 self.table_filter += event.key
             # Handle escape: clear the filter string
             elif event.key == "escape":
                 self.table_filter = ""
-
-            elif event.key == "space":
-                self.table_filter += " "
             # Update the label above the DataTable to show the current filter string
             self.update_table_filter_label()
+            # Re-render the DataTable with the filtered results
+            self.render_matches()
             # Do not return here; allow other key handling to proceed as normal
 
         if self.focused != self.dg and isinstance(self.focused, Input):
