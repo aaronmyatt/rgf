@@ -71,12 +71,12 @@ class SearchScreen(BaseScreen):
     id = "search"
     BINDINGS = [
         Binding(key="/", action="new_search", description="New Search", show=True, priority=True),
-        Binding(key="s", action="save_match", description="Save Match", show=False),
+        # Binding(key="s", action="save_match", description="Save Match", show=False),
         Binding(key="enter", action="save_match", description="Save Match", show=True, priority=True),
         Binding(key="d", action="delete_match", description="Remove match", show=True),
         Binding(key="shift+enter", action="open_in_editor", description="Open in editor", show=True),
-        Binding(key="j", action="cursor_down", show=False),
-        Binding(key="k", action="cursor_up", show=False),
+        # Binding(key="j", action="cursor_down", show=False),
+        # Binding(key="k", action="cursor_up", show=False),
         # Binding(key="ctrl+f", action="page_down", show=False),
         # Binding(key="ctrl+b", action="page_up", show=False),
         # Binding(key="ctrl+n", action="cursor_down", show=False),
@@ -106,14 +106,22 @@ class SearchScreen(BaseScreen):
         self.matches: list[Match] = []
         self.dg = None
         self.preview = None
+        # This attribute will store the current filter string as the user types while the DataTable is focused.
+        # It will be displayed above the DataTable, but will not affect filtering yet.
+        self.table_filter = ""
 
     def compose(self) -> ComposeResult:
+        # Compose the UI layout for the SearchScreen.
         yield FlowHeader()
         self.dg = DataTable(zebra_stripes=True, id="matches_table")
         self.dg.cursor_type = "row"
         self.dg.add_columns("File", "Line", "Text")
         self.preview = GrepAstPreview(read_only=True)
         with Vertical():
+            # Add a Label above the DataTable to display the current filter string.
+            # This will be updated as the user types while the DataTable is focused.
+            from textual.widgets import Label
+            yield Label("", id="table_filter_label", classes="filter-label")
             with Horizontal(classes="h-11div12"):
                 yield self.dg
                 with Vertical():
@@ -131,21 +139,46 @@ class SearchScreen(BaseScreen):
         self.render_matches()
 
     def render_matches(self, initial_selection=0):
+        """
+        Render the DataTable rows, filtered by self.table_filter if set.
+        Only matches containing the filter string in file name, line, or line number are shown.
+        """
         self.dg.clear()
-        if self.matches:
-            flow_id = get_active_flow_id(self.app.db, session_start=self.app.session_start)
-            saved_matches = list(get_matches_for_flow(self.app.db, flow_id))
-            lines = [match.get('line') for match in saved_matches]
-            file_paths = [match.get('file_path') for match in saved_matches]
-            self.matches = sorted(self.matches, key=lambda m: 0 if m.line in lines and m.file_path in file_paths else 1)
+        filter_str = self.table_filter.lower().strip()
 
-            for match in self.matches:
-                self.dg.add_row(Text(match.file_name), Text(str(match.line_no)), Text(match.line))
+        # Sort matches as before: saved matches (in flow) appear first
+        flow_id = get_active_flow_id(self.app.db, session_start=self.app.session_start)
+        saved_matches = list(get_matches_for_flow(self.app.db, flow_id))
+        lines = [match.get('line') for match in saved_matches]
+        file_paths = [match.get('file_path') for match in saved_matches]
+        sorted_matches = sorted(self.matches, key=lambda m: 0 if m.line in lines and m.file_path in file_paths else 1)
 
-            self.screen.post_message(FlowDataChanged())
+        # Filter matches if filter_str is not empty
+        if filter_str:
+            # Filter matches: show only those where the filter string appears in file_name, line, or line_no
+            filtered_matches = [
+                m for m in sorted_matches
+                if filter_str in m.file_name.lower()
+                or filter_str in m.line.lower()
+                or filter_str in str(m.line_no)
+            ]
+        else:
+            filtered_matches = sorted_matches
+
+        # Add filtered matches to the DataTable
+        for match in filtered_matches:
+            self.dg.add_row(
+                Text(match.file_name),
+                Text(str(match.line_no)),
+                Text(match.line)
+            )
+
+        self.screen.post_message(FlowDataChanged())
+        # If there are filtered matches, select the first row and update preview
+        if filtered_matches:
             self.update_preview(0)
             self.dg.move_cursor(row=initial_selection)
-        else:  # No matches found
+        else:
             self.update_preview(0)
 
     def on_input_submitted(self, event):
@@ -172,7 +205,28 @@ class SearchScreen(BaseScreen):
     async def on_key(self, event: events.Key) -> None:
         # Prevent screen switching if an Input is focused
         await super().on_key(event)
-        if isinstance(self.focused, Input):
+
+        # If the DataTable is focused (and not an Input), capture typed keys to build the filter string.
+        # Now, also filter the DataTable as the filter string changes.
+        if self.focused == self.dg:
+            # Handle backspace: remove last character from filter string
+            if event.key == "backspace":
+                self.table_filter = self.table_filter[:-1]
+            # Handle printable characters: add to filter string (including spacebar)
+            elif event.key == "space":
+                self.table_filter += " "
+            elif len(event.key) == 1 and event.key.isprintable():
+                self.table_filter += event.key
+            # Handle escape: clear the filter string
+            elif event.key == "escape":
+                self.table_filter = ""
+            # Update the label above the DataTable to show the current filter string
+            self.update_table_filter_label()
+            # Re-render the DataTable with the filtered results
+            self.render_matches()
+            # Do not return here; allow other key handling to proceed as normal
+
+        if self.focused != self.dg and isinstance(self.focused, Input):
             if event.key in {"1", "2", "3"}:
                 return
             if event.key == "escape":
@@ -182,6 +236,20 @@ class SearchScreen(BaseScreen):
             self.action_save_match()
         elif event.key == "escape":
             self.action_unfocus_all()
+
+    def update_table_filter_label(self):
+        """
+        Update the label above the DataTable to show the current filter string.
+        This provides immediate feedback to the user as they type.
+        """
+        from textual.widgets import Label
+        # Query for the label widget by its id
+        filter_label = self.query_one("#table_filter_label", Label)
+        # Set the label text to show the filter string, or clear if empty
+        if self.table_filter:
+            filter_label.update(f"Filter: {self.table_filter}")
+        else:
+            filter_label.update("")
     
     def action_unfocus_all(self):
         self.set_focus(None)
