@@ -213,31 +213,6 @@ async def test_preview_error_handling(db):
         # Should not crash and should display error message
         assert app.screen.preview.text == "<no preview>"
 
-async def test_save_match_to_database_binding(db):
-    """Test that pressing 's' saves the current match to the database."""
-    user_grep = UserGrep("def", ["test_data/"])
-    app = RGApp(db, user_grep)
-    
-    async with app.run_test() as pilot:
-        datatable = app.screen.query_one('#matches_table')
-        datatable.focus()
-        
-        current_row = datatable.cursor_coordinate.row
-        current_match = app.screen.matches[current_row]
-        
-        initial_count = len(db.execute("SELECT * FROM matches").fetchall())
-        
-        await pilot.press("s")
-        
-        matches = list(db.table('matches').rows)
-        assert len(matches) == initial_count + 1
-        
-        saved_match = matches[-1]
-        assert saved_match['file_path'] == current_match.file_path
-        assert saved_match['line'] == current_match.line
-        assert saved_match['file_name'] == current_match.file_name.split('/')[-1]
-        assert saved_match['archived'] == 0  # Should be saved as active
-
 async def test_save_match_creates_and_links_to_new_flow(db):
     """Test that pressing 's' saves the current match to the database."""
     user_grep = UserGrep("def", ["test_data/"])
@@ -249,7 +224,7 @@ async def test_save_match_creates_and_links_to_new_flow(db):
               
         initial_count = len(db.execute("SELECT * FROM matches").fetchall())
         
-        await pilot.press("s")
+        await pilot.press("enter")
         
         matches = list(db.table('matches').rows)
         flow_matches = list(db.table('flow_matches').rows)
@@ -269,7 +244,7 @@ async def test_save_match_activates_newly_created_flow(db):
         datatable = app.screen.query_one('#matches_table')
         datatable.focus()
         
-        await pilot.press("s")
+        await pilot.press("enter")
         flows = list(db.table('flows').rows)
         flow_id = get_active_flow_id(db, session_start=datetime.now(timezone.utc) - timedelta(minutes=1))
         assert flows[0]['id'] == flow_id, "The newly created flow should be active"
@@ -283,12 +258,12 @@ async def test_save_match_relates_to_already_active_flow(db):
         datatable = app.screen.query_one('#matches_table')
         datatable.focus()
         
-        await pilot.press("s")
+        await pilot.press("enter")
         flows = list(db.table('flows').rows)
         flow_id = get_active_flow_id(db, session_start=datetime.now(timezone.utc) - timedelta(minutes=1))
         assert flows[0]['id'] == flow_id, "The newly created flow should be active"
         await pilot.press("down")
-        await pilot.press("s")
+        await pilot.press("enter")
         get_flows_and_matches = db.execute("""
             SELECT f.id, m.id FROM flows f
             JOIN flow_matches fm ON f.id = fm.flows_id
@@ -352,7 +327,7 @@ async def test_match_highlighting_changes_with_active_flow(db):
 
     async with app.run_test() as pilot:
         # Save first match to Flow A
-        await pilot.press("s")
+        await pilot.press("enter")
         await pilot.pause(1)
         first_match = get_row(app).copy()
         

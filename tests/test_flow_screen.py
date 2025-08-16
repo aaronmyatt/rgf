@@ -250,7 +250,7 @@ async def test_flow_match_count_updates_after_saving_matches(db):
 
     async with app.run_test() as pilot:
         # Save first match
-        await pilot.press("s")
+        await pilot.press("enter")
 
         # Navigate to FlowScreen (key "2")
         await pilot.press("2")
@@ -269,7 +269,7 @@ async def test_flow_match_count_updates_after_saving_matches(db):
 
         # Save second match
         await pilot.press("down")  # Move to next match
-        await pilot.press("s")     # Save second match
+        await pilot.press("enter")     # Save second match
 
         assert len(list(db['matches'].rows)) == 2
 
